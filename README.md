@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Hunter Baruch Financial Website
+
+Marketing website for Hunter Baruch Financial — built with Next.js, TypeScript, and Tailwind CSS.
+
+## Pages
+
+- **Home** — Hero, services overview, patient advocacy highlight, testimonials preview
+- **Services** — Financial planning, investments, insurance, estate planning
+- **Patient Advocacy** — Medical bill review, insurance navigation, care support
+- **Testimonials** — Client stories
+- **Contact** — Contact form and business details
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server |
+| `npm run build` | Create production build |
+| `npm run start` | Serve production build |
+| `npm run lint` | Run ESLint |
 
-## Learn More
+## Customizing Content
 
-To learn more about Next.js, take a look at the following resources:
+Site content and branding live in [`src/lib/site.ts`](src/lib/site.ts). Update contact details, services, testimonials, and disclosure text there. Brand colors are defined in [`src/app/globals.css`](src/app/globals.css).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deploy to Vercel
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Push this repo to GitHub
+2. Sign in at [vercel.com](https://vercel.com) with your GitHub account
+3. Click **Add New Project** and import the repository
+4. Accept the defaults (Next.js is auto-detected)
+5. Click **Deploy**
 
-## Deploy on Vercel
+Vercel will assign a `*.vercel.app` URL. Add a custom domain later in project settings if needed.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+No environment variables are required for the initial build. If you add a contact form backend (e.g. Resend, Formspree), configure secrets in Vercel **Environment Variables**.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Git & GitHub
+
+```bash
+git init
+git add .
+git commit -m "Initial Next.js scaffold for Hunter Baruch Financial"
+git remote add origin https://github.com/<your-username>/hunter-baruch-site.git
+git branch -M main
+git push -u origin main
+```
+
+Replace `<your-username>` with your GitHub username.
