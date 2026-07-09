@@ -24,8 +24,11 @@ export const metadata: Metadata = {
     siteName: siteConfig.name,
   },
   icons: {
-    icon: siteConfig.logo,
-    apple: siteConfig.logo,
+    icon: [
+      { url: "/favicon-32.jpg", sizes: "32x32", type: "image/jpeg" },
+      { url: "/favicon-16.jpg", sizes: "16x16", type: "image/jpeg" },
+    ],
+    apple: "/apple-touch-icon.jpg",
   },
 };
 
