@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Button } from "@/components/Button";
 import { advocacyPoints, services, siteConfig, testimonials } from "@/lib/site";
+import { HeroVideoSection } from "@/components/HeroVideoSection";
+import { QuoteWizard } from "@/components/QuoteWizard";
 
 export const metadata: Metadata = {
   title: "Home",
@@ -10,27 +12,8 @@ export const metadata: Metadata = {
 export default function Home() {
   return (
     <>
-      <section className="bg-primary px-6 py-20 text-white md:py-28">
-        <div className="mx-auto max-w-6xl">
-          <p className="text-sm font-semibold uppercase tracking-widest text-accent">
-            {siteConfig.name}
-          </p>
-          <h1 className="mt-4 max-w-3xl text-4xl font-bold leading-tight tracking-tight md:text-5xl">
-            {siteConfig.tagline}
-          </h1>
-          <p className="mt-6 max-w-2xl text-lg text-white/80">
-            {siteConfig.description}
-          </p>
-          <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-            <Button href="/contact" variant="primary">
-              Schedule a Consultation
-            </Button>
-            <Button href="/services" variant="outline" className="border-white text-white hover:bg-white hover:text-primary">
-              Explore Services
-            </Button>
-          </div>
-        </div>
-      </section>
+      <HeroVideoSection />
+      <QuoteWizard />
 
       <section className="px-6 py-16">
         <div className="mx-auto max-w-6xl">
