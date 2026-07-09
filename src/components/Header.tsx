@@ -16,7 +16,7 @@ export function Header() {
             <img src={siteConfig.logo || '/hb-logo.svg'} alt={siteConfig.name} className="h-10 w-auto" />
             <div className="hidden flex-col sm:flex">
               <span className="text-lg font-bold tracking-tight text-primary">{siteConfig.name}</span>
-              <span className="text-xs text-muted">{siteConfig.tagline}</span>
+
             </div>
           </Link>
 
