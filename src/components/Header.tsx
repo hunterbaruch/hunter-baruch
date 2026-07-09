@@ -12,13 +12,13 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-white/95 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-<Link href="/" className="group flex items-center gap-4">
-            <img src={siteConfig.logo || '/hb-logo.svg'} alt={siteConfig.name} className="h-10 w-auto" />
-            <div className="hidden flex-col sm:flex">
-              <span className="text-lg font-bold tracking-tight text-primary">{siteConfig.name}</span>
-
-            </div>
-          </Link>
+        <Link href="/" className="inline-flex items-center">
+          <img
+            src={siteConfig.logo || "/hb-logo.svg"}
+            alt={siteConfig.name}
+            className="h-12 w-auto sm:h-14"
+          />
+        </Link>
 
         <nav className="hidden items-center gap-8 md:flex" aria-label="Main">
           {navLinks.map((link) => {
