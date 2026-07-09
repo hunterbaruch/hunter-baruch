@@ -16,8 +16,8 @@ export const siteConfig = {
 };
 
 export const navLinks = [
-  { href: "/", label: "Home" },
-  { href: "/services", label: "Services" },
+  { href: "/life", label: "Life" },
+  { href: "/health", label: "Health" },
   { href: "/patient-advocacy", label: "Patient Advocacy" },
   { href: "/testimonials", label: "Testimonials" },
   { href: "/contact", label: "Contact" },
@@ -43,6 +43,52 @@ export const services = [
     title: "Estate & Legacy Planning",
     description:
       "Structure your assets and beneficiary designations to support the people and causes you care about.",
+  },
+] as const;
+
+export const lifeServices = [
+  {
+    title: "Life Insurance Planning",
+    description:
+      "Identify the right type and amount of coverage to protect your family’s income, debts, and long-term goals.",
+  },
+  {
+    title: "Income Protection",
+    description:
+      "Disability and income-replacement strategies so an unexpected illness or injury doesn’t derail your finances.",
+  },
+  {
+    title: "Retirement & Longevity",
+    description:
+      "Build a sustainable plan for retirement income, Social Security timing, and multi-decade cash flow.",
+  },
+  {
+    title: "Estate & Legacy",
+    description:
+      "Coordinate beneficiaries, ownership, and legacy intentions so your wishes are clear and funded.",
+  },
+] as const;
+
+export const healthServices = [
+  {
+    title: "Health Coverage Review",
+    description:
+      "Compare plans, networks, and out-of-pocket exposure so you choose coverage that fits how you actually use care.",
+  },
+  {
+    title: "Medicare Guidance",
+    description:
+      "Navigate enrollment windows, supplements, Advantage options, and common pitfalls with plain-language advice.",
+  },
+  {
+    title: "Long-Term Care Planning",
+    description:
+      "Explore funding strategies for extended care so your family isn’t forced into crisis decisions later.",
+  },
+  {
+    title: "Benefits Optimization",
+    description:
+      "Make sense of employer benefits, HSAs, FSAs, and supplemental policies as part of your broader plan.",
   },
 ] as const;
 

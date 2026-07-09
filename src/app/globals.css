@@ -5,9 +5,10 @@
   --foreground: hsl(210 32% 16%);
   --primary: hsl(158 88% 28%);
   --primary-light: hsl(158 82% 20%);
-  --accent: hsl(158 35% 95%);
+  --accent: hsl(158 70% 34%);
   --accent-dark: hsl(158 82% 20%);
   --muted: hsl(210 18% 95%);
+  --muted-foreground: hsl(210 14% 39%);
   --border: hsl(210 16% 89%);
   --surface: hsl(0 0% 100%);
 }
@@ -20,10 +21,19 @@
   --color-accent: var(--accent);
   --color-accent-dark: var(--accent-dark);
   --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
   --color-surface: var(--surface);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+}
+
+/*
+  Legacy helper: many components use text-muted for body copy.
+  Map it to the readable muted foreground while bg-muted stays the wash.
+*/
+@utility text-muted {
+  color: var(--muted-foreground);
 }
 
 body {

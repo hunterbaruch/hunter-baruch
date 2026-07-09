@@ -5,12 +5,13 @@ export function Footer() {
   return (
     <footer className="mt-auto border-t border-border bg-primary text-white">
       <div className="mx-auto grid max-w-6xl gap-10 px-6 py-12 md:grid-cols-3">
-        <div className="flex items-center gap-4">
-          <img src={siteConfig.logo || '/hb-logo.svg'} alt={siteConfig.name} className="h-12 w-auto" />
-          <div>
-            <p className="text-lg font-bold">{siteConfig.name}</p>
-            <p className="mt-2 text-sm text-white/70">{siteConfig.tagline}</p>
-          </div>
+        <div>
+          <img
+            src={siteConfig.logo}
+            alt={siteConfig.name}
+            className="h-14 w-auto brightness-0 invert"
+          />
+          <p className="mt-3 text-sm text-white/70">{siteConfig.tagline}</p>
         </div>
 
         <div>
@@ -22,7 +23,7 @@ export function Footer() {
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className="text-sm text-white/80 transition-colors hover:text-accent"
+                  className="text-sm text-white/80 transition-colors hover:text-white"
                 >
                   {link.label}
                 </Link>
@@ -39,7 +40,7 @@ export function Footer() {
             <li>
               <a
                 href={`tel:${siteConfig.contact.phone.replace(/\D/g, "")}`}
-                className="hover:text-accent"
+                className="hover:text-white"
               >
                 {siteConfig.contact.phone}
               </a>
@@ -47,7 +48,7 @@ export function Footer() {
             <li>
               <a
                 href={`mailto:${siteConfig.contact.email}`}
-                className="hover:text-accent"
+                className="hover:text-white"
               >
                 {siteConfig.contact.email}
               </a>

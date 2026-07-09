@@ -153,7 +153,7 @@ export function QuoteWizard() {
 
           <CardContent className="p-8 pt-0">
             {submittedId ? (
-              <div className="rounded-lg border border-success bg-accent p-6">
+              <div className="rounded-lg border border-success bg-muted p-6">
                 <div className="flex items-start gap-4">
                   <svg className="h-8 w-8 text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4"/></svg>
                   <div>
