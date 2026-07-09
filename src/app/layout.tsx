@@ -24,9 +24,9 @@ export const metadata: Metadata = {
     siteName: siteConfig.name,
   },
   icons: {
-    icon: '/hb-favicon.svg',
-    apple: '/hb-favicon.svg'
-  }
+    icon: siteConfig.logo,
+    apple: siteConfig.logo,
+  },
 };
 
 export default function RootLayout({
