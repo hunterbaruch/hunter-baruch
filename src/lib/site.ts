@@ -4,6 +4,7 @@ export const siteConfig = {
   description:
     "Personalized financial planning and patient advocacy services to help you navigate complex decisions with confidence.",
   url: "https://hunterbaruchfinancial.com",
+  logo: "/hb-logo.svg",
   contact: {
     phone: "(555) 123-4567",
     email: "hello@hunterbaruchfinancial.com",

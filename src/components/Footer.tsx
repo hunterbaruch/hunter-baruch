@@ -5,9 +5,12 @@ export function Footer() {
   return (
     <footer className="mt-auto border-t border-border bg-primary text-white">
       <div className="mx-auto grid max-w-6xl gap-10 px-6 py-12 md:grid-cols-3">
-        <div>
-          <p className="text-lg font-bold">{siteConfig.name}</p>
-          <p className="mt-2 text-sm text-white/70">{siteConfig.tagline}</p>
+        <div className="flex items-center gap-4">
+          <img src={siteConfig.logo || '/hb-logo.svg'} alt={siteConfig.name} className="h-12 w-auto" />
+          <div>
+            <p className="text-lg font-bold">{siteConfig.name}</p>
+            <p className="mt-2 text-sm text-white/70">{siteConfig.tagline}</p>
+          </div>
         </div>
 
         <div>
