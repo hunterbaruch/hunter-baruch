@@ -51,18 +51,18 @@ export function ServiceCards() {
                     </li>
                   ))}
                 </ul>
-                <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                <div className="mt-6 grid grid-cols-2 gap-3">
                   <button
                     type="button"
                     onClick={() => {
                       scrollToId("pricing");
                       trackEvent("service_cta_click", { service: service.title });
                     }}
-                    className="inline-flex items-center gap-3 rounded-pill bg-tertiary px-5 py-3 text-base font-normal text-tertiary-foreground transition-colors duration-200 ease-in hover:bg-gray-800"
+                    className="inline-flex min-w-0 items-center justify-between gap-2 whitespace-nowrap rounded-pill bg-tertiary px-4 py-3 text-sm font-normal text-tertiary-foreground transition-colors duration-200 ease-in hover:bg-gray-800"
                   >
-                    {service.action}
+                    <span>{service.action}</span>
                     <svg
-                      className="h-5 w-5"
+                      className="h-4 w-4 shrink-0"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -78,7 +78,7 @@ export function ServiceCards() {
                   </button>
                   <Link
                     href={service.href}
-                    className="inline-flex items-center justify-center rounded-pill border border-gray-200 bg-accent px-5 py-3 text-base font-normal text-foreground transition-colors duration-200 ease-in hover:bg-muted"
+                    className="inline-flex items-center justify-center whitespace-nowrap rounded-pill border border-gray-200 bg-accent px-4 py-3 text-sm font-normal text-foreground transition-colors duration-200 ease-in hover:bg-muted"
                   >
                     Learn more
                   </Link>
