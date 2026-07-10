@@ -48,7 +48,8 @@ Jurisdiction: Georgia-licensed insurance producer (OCI). Federal: GLBA, TCPA, AD
 - [x] Field-level encryption for health-related fields (`healthClass`, `quoteSummary`, related messages)
 - [x] Auth-gated lead dashboard (`/admin/leads`), audit logging, retention/purge
 - [x] No health/full PII in Resend notification bodies (name + timestamp + admin link)
-  - ⏳ Confirm Vercel/log sinks are not logging raw request bodies with PII
+  - ⏳ Set `RESEND_API_KEY`, `LEAD_NOTIFICATION_EMAIL`, `LEAD_FROM_EMAIL` on Vercel — see `docs/RESEND.md`
+  - ⏳ Verify sending domain in Resend before go-live (or use `onboarding@resend.dev` for testing)
 
 ## Accessibility (WCAG 2.1 AA baseline)
 

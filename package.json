@@ -13,7 +13,8 @@
     "admin:create-user": "tsx scripts/create-admin-user.ts",
     "retention:cleanup": "tsx scripts/run-retention-cleanup.ts",
     "test:security": "tsx scripts/smoke-security.ts",
-    "test:a11y": "tsx scripts/a11y-smoke.ts"
+    "test:a11y": "tsx scripts/a11y-smoke.ts",
+    "test:resend": "tsx scripts/test-resend.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",

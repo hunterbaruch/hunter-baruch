@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { persistLead } from "@/lib/persistLead";
 import { leadSubmissionSchema, formatZodError } from "@/lib/leadSchema";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
+import { sendLeadNotification } from "@/lib/sendLeadNotification";
 import { siteConfig } from "@/lib/site";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 import type { LeadPayload } from "@/lib/submitLead";
@@ -36,75 +37,8 @@ function reportLeadFailure(
 
 /**
  * Notification email — intentionally minimal.
- * Do NOT include health answers, phone, full message, or quote details.
- * Full details are available in the authenticated admin dashboard.
+ * See src/lib/sendLeadNotification.ts and docs/RESEND.md.
  */
-function formatLeadNotificationEmail(params: {
-  name: string;
-  referenceId: string;
-  leadId: string;
-  createdAt: Date;
-}) {
-  const dashboardUrl = `${siteConfig.url}/admin/leads/${params.leadId}`;
-  return [
-    `New lead submitted — ${params.name}, ${params.createdAt.toISOString()}`,
-    "",
-    `Reference: ${params.referenceId}`,
-    `View full details (sign-in required): ${dashboardUrl}`,
-    "",
-    "This notification intentionally omits health answers and full submission details.",
-  ].join("\n");
-}
-
-async function sendLeadEmail(params: {
-  name: string;
-  email: string;
-  referenceId: string;
-  leadId: string;
-  source: string;
-  topic?: string | null;
-  createdAt: Date;
-}) {
-  const apiKey = process.env.RESEND_API_KEY;
-  const toEmail = process.env.LEAD_NOTIFICATION_EMAIL;
-  const fromEmail = process.env.LEAD_FROM_EMAIL;
-
-  if (!apiKey || !toEmail || !fromEmail) {
-    console.warn(
-      "[leads] Email delivery skipped. Set RESEND_API_KEY, LEAD_NOTIFICATION_EMAIL, and LEAD_FROM_EMAIL.",
-    );
-    return false;
-  }
-
-  const subjectTopic = params.topic ?? "General inquiry";
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: fromEmail,
-      to: [toEmail],
-      reply_to: params.email,
-      subject: `New ${params.source} lead — ${subjectTopic} (${params.referenceId})`,
-      text: formatLeadNotificationEmail({
-        name: params.name,
-        referenceId: params.referenceId,
-        leadId: params.leadId,
-        createdAt: params.createdAt,
-      }),
-    }),
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    console.error("[leads] Resend error:", errorBody);
-    return false;
-  }
-
-  return true;
-}
 
 export async function POST(request: Request) {
   const ip = getClientIp(request);
@@ -215,7 +149,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const emailSent = await sendLeadEmail({
+  const emailResult = await sendLeadNotification({
     name: payload.name,
     email: payload.email,
     referenceId: lead.referenceId,
@@ -225,10 +159,12 @@ export async function POST(request: Request) {
     createdAt: lead.createdAt,
   });
 
-  if (!emailSent) {
+  if (!emailResult.ok) {
     reportLeadFailure(
       "email",
-      `Lead ${lead.referenceId} saved without email delivery`,
+      emailResult.reason === "not_configured"
+        ? `Lead ${lead.referenceId} saved without email — ${emailResult.detail}`
+        : `Lead ${lead.referenceId} Resend error: ${emailResult.detail}`,
     );
   }
 

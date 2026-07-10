@@ -32,6 +32,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 | `npm run retention:cleanup` | Mark and purge expired lead records |
 | `npm run test:security` | Smoke-test encryption + lead Zod schema |
 | `npm run test:a11y` | Contrast smoke checks for key theme pairs |
+| `npm run test:resend` | Check Resend env vars (`--send` to test email) |
 
 ## Operations & backups
 
@@ -55,6 +56,8 @@ Expect HTTP 200 and `{ "ok": true, "database": "up" }`. Alert on non-200. This p
 **Failure visibility:** Lead API failures log structured `[leads][ops]` errors (Vercel Logs). For paging/alerts beyond logs, add Sentry at the `reportLeadFailure` hook in `src/app/api/leads/route.ts`.
 
 **Lead hand-off:** See the “Lead hand-off process” section in [`COMPLIANCE-CHECKLIST.md`](./COMPLIANCE-CHECKLIST.md). Default flow: Resend notify → `/admin/leads` → contact prospect → book consultation.
+
+**Resend (new lead emails):** Full setup in [`docs/RESEND.md`](./docs/RESEND.md). Required env vars: `RESEND_API_KEY`, `LEAD_NOTIFICATION_EMAIL`, `LEAD_FROM_EMAIL`.
 
 **Compliance checklist:** [`COMPLIANCE-CHECKLIST.md`](./COMPLIANCE-CHECKLIST.md) is the full legal/content/tech/ops pre-launch list.
 
