@@ -11,12 +11,25 @@ export type TurnstileVerifyResult =
   | { ok: true }
   | { ok: false; error: string };
 
+/** Client-side: block submit until Turnstile passes (production only). */
+export function isTurnstileEnforcedOnClient(): boolean {
+  return (
+    process.env.NODE_ENV === "production" &&
+    Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY)
+  );
+}
+
 export async function verifyTurnstileToken(
   token: string | undefined,
   ip?: string,
 ): Promise<TurnstileVerifyResult> {
   const secret = process.env.TURNSTILE_SECRET_KEY;
   const isProd = process.env.NODE_ENV === "production";
+
+  // Local `npm run dev` should not block on Turnstile; Vercel uses production.
+  if (!isProd) {
+    return { ok: true };
+  }
 
   if (!secret) {
     if (isProd) {

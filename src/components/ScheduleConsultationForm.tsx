@@ -16,6 +16,7 @@ import {
 } from "@/lib/quoteWizardStorage";
 import { submitLead } from "@/lib/submitLead";
 import { siteConfig } from "@/lib/site";
+import { isTurnstileEnforcedOnClient } from "@/lib/turnstile";
 import { trackEvent } from "@/lib/utils";
 
 type FormState = {
@@ -56,9 +57,7 @@ export function ScheduleConsultationForm() {
   const [tcpaConsent, setTcpaConsent] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileReset, setTurnstileReset] = useState(0);
-  const turnstileRequired = Boolean(
-    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
-  );
+  const turnstileRequired = isTurnstileEnforcedOnClient();
 
   useEffect(() => {
     const snapshot = readQuoteWizardSnapshot();

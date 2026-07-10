@@ -10,6 +10,7 @@ import { TurnstileWidget } from "@/components/TurnstileWidget";
 import { Textarea } from "@/components/ui/textarea";
 import { submitLead } from "@/lib/submitLead";
 import { siteConfig } from "@/lib/site";
+import { isTurnstileEnforcedOnClient } from "@/lib/turnstile";
 import { trackEvent } from "@/lib/utils";
 
 type FormState = {
@@ -33,9 +34,7 @@ export function ContactForm() {
   const [companyWebsite, setCompanyWebsite] = useState("");
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileReset, setTurnstileReset] = useState(0);
-  const turnstileRequired = Boolean(
-    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
-  );
+  const turnstileRequired = isTurnstileEnforcedOnClient();
 
   function validate(): boolean {
     const nextErrors: Partial<FormState> = {};

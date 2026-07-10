@@ -35,6 +35,7 @@ import { TcpaConsentCheckbox } from "@/components/TcpaConsentCheckbox";
 import { TurnstileWidget } from "@/components/TurnstileWidget";
 import { submitLead } from "@/lib/submitLead";
 import { siteConfig } from "@/lib/site";
+import { isTurnstileEnforcedOnClient } from "@/lib/turnstile";
 import { trackEvent } from "@/lib/utils";
 
 const LIFE_STEP_COUNT = 8;
@@ -79,9 +80,7 @@ export function QuoteWizard() {
   const [submitError, setSubmitError] = useState("");
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileReset, setTurnstileReset] = useState(0);
-  const turnstileRequired = Boolean(
-    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
-  );
+  const turnstileRequired = isTurnstileEnforcedOnClient();
 
   const isLifeFlow = state.coverageType === "Life";
   const showEstimate = isLifeFlow && !submittedId;
