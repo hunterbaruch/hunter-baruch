@@ -4,7 +4,6 @@ import { CarriersDirectory } from "@/components/CarriersDirectory";
 import { FAQAccordion } from "@/components/FAQAccordion";
 import { HeroVideoSection } from "@/components/HeroVideoSection";
 import { ProcessTimeline } from "@/components/ProcessTimeline";
-import { QuoteEstimator } from "@/components/QuoteEstimator";
 import { QuoteWizard } from "@/components/QuoteWizard";
 import { ServiceCards } from "@/components/ServiceCards";
 import { TestimonialsVideoGridCarousel } from "@/components/TestimonialsVideoGridCarousel";
@@ -22,7 +21,6 @@ export default function Home() {
       <HeroVideoSection />
       <div className="home-sections">
         <TrustStrip />
-        <QuoteEstimator />
         <QuoteWizard />
         <ServiceCards />
         <ProcessTimeline />
