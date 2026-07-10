@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
+import { siteConfig } from "@/lib/site";
 import { trackEvent } from "@/lib/utils";
 
 export function HeroVideoSection() {
@@ -57,6 +58,16 @@ export function HeroVideoSection() {
       />
       <div className="absolute inset-0 bg-gradient-to-b from-black/0 to-black" />
       <div className="absolute inset-0 bg-tertiary/50" />
+      <div
+        className="pointer-events-none absolute bottom-8 right-12 z-10 hidden border-2 border-primary bg-white p-2 md:block lg:bottom-10 lg:right-16 lg:p-3"
+        aria-hidden
+      >
+        <img
+          src={siteConfig.logo}
+          alt=""
+          className="h-24 w-auto lg:h-28"
+        />
+      </div>
       <div className="container-shell relative z-10 w-full px-8 pb-8 pt-16 lg:px-12 lg:pb-10">
         <div ref={contentRef} className="max-w-2xl text-left">
           <p
