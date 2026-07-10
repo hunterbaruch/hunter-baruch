@@ -211,7 +211,8 @@ export function QuoteWizard() {
 
   return (
     <section id="pricing" className="section-shell bg-gradient-soft">
-      <div className="container-shell grid gap-6 lg:grid-cols-[1.35fr_0.95fr]">
+      <div className="container-shell">
+        <div className="grid gap-6 lg:grid-cols-[1.35fr_0.95fr] lg:items-start">
         <Card className="border border-gray-200 bg-card">
           <CardHeader className="space-y-3 p-6">
             <div className="flex items-center justify-between gap-4">
@@ -273,8 +274,8 @@ export function QuoteWizard() {
                 </div>
               </div>
             ) : (
-              <div className="space-y-6">
-                <div className="min-h-[220px]">
+              <div className="space-y-4">
+                <div>
                   {step === 0 && (
                     <div className="grid gap-4">
                       <label className="grid gap-2">
@@ -654,7 +655,7 @@ export function QuoteWizard() {
           </CardContent>
         </Card>
 
-        <div className="grid gap-4 lg:sticky lg:top-8 lg:self-start">
+        <div className="grid gap-4 lg:sticky lg:top-8">
           {showEstimate ? (
             <>
               <Card className="border border-gray-200 bg-tertiary">
@@ -691,8 +692,8 @@ export function QuoteWizard() {
 
               <Card className="border border-gray-200 bg-card">
                 <CardContent className="p-6">
-                  <h3 className="text-sm font-medium text-gray-900">Why a range?</h3>
-                  <p className="mt-2 text-sm font-light leading-6 text-gray-600">
+                  <h3 className="text-xl font-medium text-gray-900">Why a range?</h3>
+                  <p className="mt-3 text-base font-light leading-7 text-gray-700">
                     Final pricing depends on underwriting details, medical history,
                     and carrier-specific guidelines. A consultation narrows this
                     to your exact options — with no carrier bias.
@@ -731,20 +732,19 @@ export function QuoteWizard() {
               </CardContent>
             </Card>
           )}
+        </div>
+        </div>
 
-          <Card className="border border-gray-200 bg-card">
-            <CardContent className="p-6">
-              <h3 className="text-xl font-medium text-gray-900">Privacy reassurance</h3>
-              <p className="mt-3 text-base font-light leading-7 text-gray-700">
-                Your information is used only to prepare plan recommendations and
-                contact you about your request. We do not ask for Social Security
-                or payment details in this form.
-              </p>
-              <p className="mt-4 text-sm font-light text-gray-600">
-                Expected follow-up: within one business day.
-              </p>
-            </CardContent>
-          </Card>
+        <div className="mt-4 rounded-xl border border-gray-200 bg-card px-5 py-4 sm:px-6">
+          <p className="text-base font-medium text-gray-900">Privacy reassurance</p>
+          <p className="mt-2 text-sm font-light leading-6 text-gray-700">
+            Your information is used only to prepare plan recommendations and contact
+            you about your request. We do not ask for Social Security or payment
+            details in this form.{" "}
+            <span className="text-gray-600">
+              Expected follow-up: within one business day.
+            </span>
+          </p>
         </div>
       </div>
     </section>
