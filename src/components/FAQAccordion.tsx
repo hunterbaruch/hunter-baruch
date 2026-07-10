@@ -18,7 +18,7 @@ export function FAQAccordion() {
           </h2>
         </div>
 
-        <div className="mt-10 rounded-lg border border-gray-200 bg-card p-4 sm:p-6">
+        <div className="mt-8 rounded-lg border border-gray-200 bg-card p-4 sm:p-5">
           <div className="w-full">
             {faqs.map((faq) => {
               const isOpen = openId === faq.id;

@@ -129,9 +129,9 @@ export function QuoteWizard() {
 
   return (
     <section id="pricing" className="section-shell bg-gradient-soft">
-      <div className="container-shell grid gap-8 lg:grid-cols-[1.35fr_0.95fr]">
+      <div className="container-shell grid gap-6 lg:grid-cols-[1.35fr_0.95fr]">
         <Card className="border border-gray-200 bg-card">
-          <CardHeader className="space-y-4 p-8">
+          <CardHeader className="space-y-3 p-6">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <CardTitle className="text-3xl font-medium tracking-tight text-gray-900">
@@ -151,7 +151,7 @@ export function QuoteWizard() {
             <Progress value={submittedId ? 100 : progressValue} className="h-3" />
           </CardHeader>
 
-          <CardContent className="p-8 pt-0">
+          <CardContent className="p-6 pt-0">
             {submittedId ? (
               <div className="rounded-lg border border-success bg-muted p-6">
                 <div className="flex items-start gap-4">
@@ -285,9 +285,9 @@ export function QuoteWizard() {
           </CardContent>
         </Card>
 
-        <div className="grid gap-6">
+        <div className="grid gap-4">
           <Card className="border border-gray-200 bg-tertiary">
-            <CardContent className="p-8">
+            <CardContent className="p-6">
               <h3 className="text-2xl font-medium tracking-tight text-gray-50">What you get</h3>
               <ul className="mt-6 grid gap-4">
                 {[
@@ -306,7 +306,7 @@ export function QuoteWizard() {
           </Card>
 
           <Card className="border border-gray-200 bg-card">
-            <CardContent className="p-8">
+            <CardContent className="p-6">
               <h3 className="text-xl font-medium text-gray-900">Privacy reassurance</h3>
               <p className="mt-3 text-base font-light leading-7 text-gray-700">Your information is used only to prepare plan recommendations and contact you about your request. We do not ask for Social Security or payment details in this form.</p>
               <p className="mt-4 text-sm font-light text-gray-600">Expected follow-up: within one business day.</p>

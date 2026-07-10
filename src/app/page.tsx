@@ -19,14 +19,16 @@ export default function Home() {
   return (
     <>
       <HeroVideoSection />
-      <TrustStrip />
-      <QuoteWizard />
-      <ServiceCards />
-      <ProcessTimeline />
-      <TestimonialsVideoGridCarousel />
-      <CarriersDirectory />
-      <AboutCredentials />
-      <FAQAccordion />
+      <div className="home-sections">
+        <TrustStrip />
+        <QuoteWizard />
+        <ServiceCards />
+        <ProcessTimeline />
+        <TestimonialsVideoGridCarousel />
+        <CarriersDirectory />
+        <AboutCredentials />
+        <FAQAccordion />
+      </div>
     </>
   );
 }

@@ -13,10 +13,10 @@ export function ProcessTimeline() {
             A simple process that keeps decisions organized.
           </h2>
         </div>
-        <div className="mt-12 grid gap-8 lg:grid-cols-3">
+        <div className="mt-8 grid gap-6 lg:grid-cols-3">
           {processSteps.map((item) => (
             <Card key={item.step} className="border border-gray-200 bg-card">
-              <CardContent className="p-8">
+              <CardContent className="p-6">
                 <p className="text-sm font-normal uppercase tracking-[0.2em] text-primary">
                   {item.step}
                 </p>

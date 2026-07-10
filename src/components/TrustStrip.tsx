@@ -6,7 +6,7 @@ export function TrustStrip() {
       aria-label="Featured carrier partners"
       className="border-y border-gray-200 bg-card"
     >
-      <div className="container-shell px-8 py-6 lg:px-12">
+      <div className="container-shell px-8 py-4 lg:px-12">
         <div className="grid gap-4 lg:grid-cols-[220px_1fr] lg:items-center">
           <div>
             <p className="text-sm font-light uppercase tracking-[0.2em] text-gray-600">

@@ -33,7 +33,7 @@ export function CarriersDirectory() {
           </p>
         </div>
 
-        <div className="mt-8 flex flex-wrap gap-3">
+        <div className="mt-6 flex flex-wrap gap-3">
           {carrierCategories.map((category) => (
             <button
               key={category}
@@ -50,7 +50,7 @@ export function CarriersDirectory() {
           ))}
         </div>
 
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {carriers.map((carrier) => (
             <Card key={carrier.name} className="border border-gray-200 bg-card">
               <CardContent className="flex min-h-[180px] flex-col justify-between p-6">

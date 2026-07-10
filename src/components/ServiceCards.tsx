@@ -22,7 +22,7 @@ export function ServiceCards() {
           </p>
         </div>
 
-        <div className="mt-12 grid gap-8 lg:grid-cols-3">
+        <div className="mt-8 grid gap-6 lg:grid-cols-3">
           {coreServices.map((service) => (
             <Card
               key={service.title}
@@ -32,9 +32,9 @@ export function ServiceCards() {
                 src={service.image}
                 alt={service.alt}
                 loading="lazy"
-                className="h-64 w-full object-cover"
+                className="h-52 w-full object-cover"
               />
-              <CardContent className="p-8">
+              <CardContent className="p-6">
                 <h3 className="text-2xl font-medium tracking-tight text-gray-900">
                   {service.title}
                 </h3>

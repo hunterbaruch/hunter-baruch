@@ -69,11 +69,27 @@ body {
 
 @utility section-shell {
   padding-inline: 2rem;
-  padding-block: 4rem;
+  padding-block: 2.5rem;
 
   @media (width >= 64rem) {
     padding-inline: 3rem;
-    padding-block: 6rem;
+    padding-block: 3.5rem;
+  }
+}
+
+@utility home-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  padding-bottom: 2.5rem;
+
+  @media (width >= 64rem) {
+    gap: 3.5rem;
+    padding-bottom: 3.5rem;
+  }
+
+  & .section-shell {
+    padding-block: 0;
   }
 }
 

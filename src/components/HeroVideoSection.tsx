@@ -42,7 +42,7 @@ export function HeroVideoSection() {
   return (
     <section
       id="top"
-      className="relative flex min-h-screen items-center overflow-hidden bg-tertiary"
+      className="relative flex min-h-[min(62svh,560px)] items-end overflow-hidden bg-tertiary"
     >
       <video
         ref={videoRef}
@@ -57,33 +57,33 @@ export function HeroVideoSection() {
       />
       <div className="absolute inset-0 bg-gradient-to-b from-black/0 to-black" />
       <div className="absolute inset-0 bg-tertiary/50" />
-      <div className="container-shell relative z-10 px-8 py-24 lg:px-12">
-        <div ref={contentRef} className="max-w-3xl">
+      <div className="container-shell relative z-10 w-full px-8 pb-8 pt-16 lg:px-12 lg:pb-10">
+        <div ref={contentRef} className="max-w-2xl text-left">
           <p
             data-hero-item
-            className="mb-4 text-sm font-light uppercase tracking-[0.24em] text-gray-100"
+            className="mb-3 text-sm font-light uppercase tracking-[0.24em] text-gray-100"
           >
             Life insurance, Medicare guidance, patient advocacy
           </p>
           <h1
             data-hero-item
-            className="max-w-2xl text-5xl font-medium leading-tight tracking-tight text-gray-50 md:text-6xl"
+            className="max-w-2xl text-4xl font-medium leading-tight tracking-tight text-gray-50 md:text-5xl"
           >
             Insurance guidance that helps families choose with confidence.
           </h1>
           <p
             data-hero-item
-            className="mt-6 max-w-2xl text-lg font-light leading-8 text-gray-100"
+            className="mt-4 max-w-2xl text-base font-light leading-7 text-gray-100 md:text-lg md:leading-8"
           >
             Compare trusted coverage options, get help understanding Medicare
             choices, and work with a patient advocate who stays with you through
             the decision.
           </p>
-          <div data-hero-item className="mt-8">
+          <div data-hero-item className="mt-6">
             <button
               type="button"
               onClick={handleQuoteClick}
-              className="inline-flex items-center gap-3 rounded-pill bg-primary px-6 py-4 text-base font-normal text-primary-foreground transition-colors duration-200 ease-in hover:bg-secondary"
+              className="inline-flex items-center gap-3 rounded-pill bg-primary px-5 py-3 text-base font-normal text-primary-foreground transition-colors duration-200 ease-in hover:bg-secondary"
             >
               <span className="text-base font-normal text-primary-foreground">
                 Get My Quote
@@ -101,7 +101,7 @@ export function HeroVideoSection() {
               </svg>
             </button>
           </div>
-          <p data-hero-item className="mt-4 text-sm font-light text-gray-100">
+          <p data-hero-item className="mt-3 text-sm font-light text-gray-100">
             No obligation • 2-minute start
           </p>
         </div>

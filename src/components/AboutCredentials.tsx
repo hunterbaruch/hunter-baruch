@@ -4,7 +4,7 @@ import { aboutStats, siteConfig } from "@/lib/site";
 export function AboutCredentials() {
   return (
     <section id="about" className="section-shell bg-card">
-      <div className="container-shell grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+      <div className="container-shell grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
         <div>
           <p className="text-sm font-light uppercase tracking-[0.2em] text-gray-600">
             About the agency
@@ -57,7 +57,7 @@ export function AboutCredentials() {
             src="https://c.animaapp.com/mrcdjiw8FSusfK/img/ai_6.png"
             alt="Insurance advisor standing portrait"
             loading="lazy"
-            className="h-full min-h-[520px] w-full object-cover"
+            className="h-full min-h-[420px] w-full object-cover"
           />
           <CardContent className="border-t border-gray-200 p-6">
             <h3 className="text-2xl font-medium text-gray-900">

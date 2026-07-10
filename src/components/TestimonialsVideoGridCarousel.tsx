@@ -29,7 +29,7 @@ function TestimonialCard({
         <video
           src={testimonial.videoUrl}
           poster={testimonial.posterUrl}
-          className="h-64 w-full object-cover"
+          className="h-52 w-full object-cover"
           controls
           preload="metadata"
           onPlay={() =>
@@ -113,13 +113,13 @@ export function TestimonialsVideoGridCarousel() {
           </div>
         </div>
 
-        <div className="mt-12 hidden gap-8 lg:grid lg:grid-cols-3">
+        <div className="mt-8 hidden gap-6 lg:grid lg:grid-cols-3">
           {videoTestimonials.map((testimonial) => (
             <TestimonialCard key={testimonial.id} testimonial={testimonial} />
           ))}
         </div>
 
-        <div className="mt-10 lg:hidden">
+        <div className="mt-8 lg:hidden">
           <TestimonialCard testimonial={videoTestimonials[index]} />
         </div>
       </div>
