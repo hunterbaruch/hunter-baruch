@@ -103,7 +103,15 @@ export default function PrivacyPolicyPage() {
               >
                 {siteConfig.contact.email}
               </a>{" "}
-              to make a request. We do not sell personal information.
+              to make a request. We do not sell personal information. You may
+              also use our{" "}
+              <Link
+                href="/do-not-sell"
+                className="text-primary underline-offset-2 hover:underline"
+              >
+                Do Not Sell or Share My Personal Information
+              </Link>{" "}
+              page.
             </p>
           </section>
 

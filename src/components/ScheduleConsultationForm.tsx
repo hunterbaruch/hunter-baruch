@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { PrivacyPolicyLink } from "@/components/PrivacyPolicyLink";
 import { FormSubmitError, FormValidationStatus } from "@/components/FormFeedback";
 import { TcpaConsentCheckbox } from "@/components/TcpaConsentCheckbox";
+import { TurnstileWidget } from "@/components/TurnstileWidget";
 import { Textarea } from "@/components/ui/textarea";
 import {
   buildSchedulePrefill,
@@ -53,6 +54,11 @@ export function ScheduleConsultationForm() {
   const [submitError, setSubmitError] = useState("");
   const [companyWebsite, setCompanyWebsite] = useState("");
   const [tcpaConsent, setTcpaConsent] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileReset, setTurnstileReset] = useState(0);
+  const turnstileRequired = Boolean(
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
+  );
 
   useEffect(() => {
     const snapshot = readQuoteWizardSnapshot();
@@ -100,6 +106,11 @@ export function ScheduleConsultationForm() {
     event.preventDefault();
     if (!validate()) return;
 
+    if (turnstileRequired && !turnstileToken) {
+      setSubmitError("Please complete the security check and try again.");
+      return;
+    }
+
     setIsPending(true);
     setSubmitError("");
 
@@ -115,11 +126,14 @@ export function ScheduleConsultationForm() {
       healthClass,
       companyWebsite,
       tcpaConsent,
+      turnstileToken: turnstileToken ?? undefined,
     });
 
     setIsPending(false);
 
     if (!result.ok) {
+      setTurnstileToken(null);
+      setTurnstileReset((value) => value + 1);
       setSubmitError(
         result.error ??
           `We could not send your request. Please try again or call ${siteConfig.contact.phone}.`,
@@ -278,6 +292,8 @@ export function ScheduleConsultationForm() {
 
       <HoneypotField value={companyWebsite} onChange={setCompanyWebsite} />
 
+      <TurnstileWidget onToken={setTurnstileToken} resetSignal={turnstileReset} />
+
       <FormValidationStatus
         errors={[
           errors.topic,
@@ -296,7 +312,7 @@ export function ScheduleConsultationForm() {
 
       <Button
         type="submit"
-        disabled={isPending}
+        disabled={isPending || (turnstileRequired && !turnstileToken)}
         className="mt-2 bg-primary text-primary-foreground hover:bg-secondary disabled:bg-gray-300 disabled:text-gray-600"
       >
         {isPending ? "Sending..." : "Request consultation"}

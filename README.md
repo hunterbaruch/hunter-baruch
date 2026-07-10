@@ -31,6 +31,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 | `npm run admin:create-user` | Create/update an admin user for `/admin/login` |
 | `npm run retention:cleanup` | Mark and purge expired lead records |
 | `npm run test:security` | Smoke-test encryption + lead Zod schema |
+| `npm run test:a11y` | Contrast smoke checks for key theme pairs |
 
 ## Operations & backups
 
@@ -41,9 +42,21 @@ Lead records are stored in PostgreSQL (currently Supabase when `DATABASE_URL` po
 - Before destructive schema changes, take a manual backup or snapshot.
 - Retention cleanup (`npm run retention:cleanup` or `POST /api/admin/retention-cleanup`) permanently deletes expired leads — run only intentionally.
 
-**Monitoring:** Lead API failures log structured `[leads][ops]` errors to the host logs (Vercel Logs). For paging/alerts, add Sentry (or similar) at the `reportLeadFailure` hook in `src/app/api/leads/route.ts`.
+**Uptime monitoring:** Point an external monitor (UptimeRobot, Better Stack, Checkly, etc.) at:
 
-**Compliance checklist:** See [`COMPLIANCE-CHECKLIST.md`](./COMPLIANCE-CHECKLIST.md) for legal, accessibility, and hardening items still pending Hunter/compliance input (license/NPN, final legal copy, etc.).
+```text
+GET https://<your-domain>/api/health
+```
+
+Expect HTTP 200 and `{ "ok": true, "database": "up" }`. Alert on non-200. This probes app + DB connectivity without exposing PII.
+
+**Bot protection:** Lead forms use honeypot + IP rate limiting (3 / 10 min) + Cloudflare Turnstile. Set `NEXT_PUBLIC_TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` in Vercel. Production rejects submissions when Turnstile is not configured.
+
+**Failure visibility:** Lead API failures log structured `[leads][ops]` errors (Vercel Logs). For paging/alerts beyond logs, add Sentry at the `reportLeadFailure` hook in `src/app/api/leads/route.ts`.
+
+**Lead hand-off:** See the “Lead hand-off process” section in [`COMPLIANCE-CHECKLIST.md`](./COMPLIANCE-CHECKLIST.md). Default flow: Resend notify → `/admin/leads` → contact prospect → book consultation.
+
+**Compliance checklist:** [`COMPLIANCE-CHECKLIST.md`](./COMPLIANCE-CHECKLIST.md) is the full legal/content/tech/ops pre-launch list.
 
 ## Environment
 

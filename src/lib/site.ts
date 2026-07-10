@@ -39,6 +39,10 @@ export const siteConfig = {
   legalLinks: [
     { href: "/privacy-policy", label: "Privacy Policy" },
     { href: "/terms-of-service", label: "Terms of Service" },
+    {
+      href: "/do-not-sell",
+      label: "Do Not Sell or Share My Personal Information",
+    },
   ] as const,
 };
 

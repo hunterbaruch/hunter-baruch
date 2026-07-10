@@ -3,6 +3,7 @@ import { persistLead } from "@/lib/persistLead";
 import { leadSubmissionSchema, formatZodError } from "@/lib/leadSchema";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 import { siteConfig } from "@/lib/site";
+import { verifyTurnstileToken } from "@/lib/turnstile";
 import type { LeadPayload } from "@/lib/submitLead";
 
 /**
@@ -12,7 +13,13 @@ import type { LeadPayload } from "@/lib/submitLead";
  * Example: Sentry.captureException(error, { tags: { route: "leads" } })
  */
 function reportLeadFailure(
-  stage: "parse" | "validate" | "persist" | "email" | "rate_limit",
+  stage:
+    | "parse"
+    | "validate"
+    | "persist"
+    | "email"
+    | "rate_limit"
+    | "turnstile",
   detail: string,
   error?: unknown,
 ) {
@@ -141,6 +148,23 @@ export async function POST(request: Request) {
 
   if (honeypot.trim().length > 0) {
     return NextResponse.json({ ok: true, referenceId: "OK" });
+  }
+
+  const turnstileToken =
+    typeof body === "object" &&
+    body !== null &&
+    "turnstileToken" in body &&
+    typeof (body as { turnstileToken?: unknown }).turnstileToken === "string"
+      ? (body as { turnstileToken: string }).turnstileToken
+      : undefined;
+
+  const turnstile = await verifyTurnstileToken(turnstileToken, ip);
+  if (!turnstile.ok) {
+    reportLeadFailure("turnstile", turnstile.error);
+    return NextResponse.json(
+      { ok: false, error: turnstile.error },
+      { status: 403 },
+    );
   }
 
   const parsed = leadSubmissionSchema.safeParse(body);

@@ -15,6 +15,8 @@ export type LeadPayload = {
   companyWebsite?: string;
   /** TCPA consent checkbox — required when phone is provided. */
   tcpaConsent?: boolean;
+  /** Cloudflare Turnstile token — verified server-side when configured. */
+  turnstileToken?: string;
 };
 
 export type LeadSubmissionResult = {

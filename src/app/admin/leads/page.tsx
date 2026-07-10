@@ -20,6 +20,8 @@ export default async function AdminLeadsPage() {
           <h1 className="text-3xl font-medium text-gray-900">Leads</h1>
           <p className="mt-2 text-sm font-light text-gray-600">
             Authenticated access only. Opening a record writes an audit log entry.
+            Hand-off: review the lead, contact the prospect, then book a
+            consultation (see COMPLIANCE-CHECKLIST.md).
           </p>
         </div>
         <form

@@ -32,6 +32,7 @@ import { HoneypotField } from "@/components/HoneypotField";
 import { PrivacyPolicyLink } from "@/components/PrivacyPolicyLink";
 import { FormSubmitError, FormValidationStatus } from "@/components/FormFeedback";
 import { TcpaConsentCheckbox } from "@/components/TcpaConsentCheckbox";
+import { TurnstileWidget } from "@/components/TurnstileWidget";
 import { submitLead } from "@/lib/submitLead";
 import { siteConfig } from "@/lib/site";
 import { trackEvent } from "@/lib/utils";
@@ -76,6 +77,11 @@ export function QuoteWizard() {
   const [companyWebsite, setCompanyWebsite] = useState("");
   const [tcpaConsent, setTcpaConsent] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileReset, setTurnstileReset] = useState(0);
+  const turnstileRequired = Boolean(
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
+  );
 
   const isLifeFlow = state.coverageType === "Life";
   const showEstimate = isLifeFlow && !submittedId;
@@ -186,6 +192,11 @@ export function QuoteWizard() {
   const handleSubmit = async () => {
     if (!validateStep()) return;
 
+    if (turnstileRequired && !turnstileToken) {
+      setSubmitError("Please complete the security check and try again.");
+      return;
+    }
+
     setIsPending(true);
     setSubmitError("");
 
@@ -210,11 +221,14 @@ export function QuoteWizard() {
       healthClass: state.healthClass,
       companyWebsite,
       tcpaConsent,
+      turnstileToken: turnstileToken ?? undefined,
     });
 
     setIsPending(false);
 
     if (!result.ok) {
+      setTurnstileToken(null);
+      setTurnstileReset((value) => value + 1);
       setSubmitError(
         result.error ??
           `We could not submit your request. Please try again or call ${siteConfig.contact.phone}.`,
@@ -647,6 +661,13 @@ export function QuoteWizard() {
 
                 <HoneypotField value={companyWebsite} onChange={setCompanyWebsite} />
 
+                {isLastLifeStep && (
+                  <TurnstileWidget
+                    onToken={setTurnstileToken}
+                    resetSignal={turnstileReset}
+                  />
+                )}
+
                 <FormValidationStatus
                   errors={[
                     fieldErrors.coverageType,
@@ -688,7 +709,9 @@ export function QuoteWizard() {
                       <Button
                         type="button"
                         onClick={handleSubmit}
-                        disabled={isPending}
+                        disabled={
+                          isPending || (turnstileRequired && !turnstileToken)
+                        }
                         className="bg-primary text-primary-foreground hover:bg-secondary disabled:bg-gray-300 disabled:text-gray-600"
                       >
                         {isPending ? "Submitting..." : "Submit request"}

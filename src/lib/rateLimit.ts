@@ -16,7 +16,8 @@ type Bucket = {
 const buckets = new Map<string, Bucket>();
 
 const WINDOW_MS = 10 * 60 * 1000;
-const MAX_REQUESTS = 5;
+/** Stricter default to limit automated form abuse. */
+const MAX_REQUESTS = 3;
 
 export type RateLimitResult = {
   allowed: boolean;

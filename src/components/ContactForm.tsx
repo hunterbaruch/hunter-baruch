@@ -6,6 +6,7 @@ import { HoneypotField } from "@/components/HoneypotField";
 import { Input } from "@/components/ui/input";
 import { PrivacyPolicyLink } from "@/components/PrivacyPolicyLink";
 import { FormSubmitError, FormValidationStatus } from "@/components/FormFeedback";
+import { TurnstileWidget } from "@/components/TurnstileWidget";
 import { Textarea } from "@/components/ui/textarea";
 import { submitLead } from "@/lib/submitLead";
 import { siteConfig } from "@/lib/site";
@@ -30,6 +31,11 @@ export function ContactForm() {
   const [isPending, setIsPending] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [companyWebsite, setCompanyWebsite] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileReset, setTurnstileReset] = useState(0);
+  const turnstileRequired = Boolean(
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
+  );
 
   function validate(): boolean {
     const nextErrors: Partial<FormState> = {};
@@ -54,6 +60,11 @@ export function ContactForm() {
     event.preventDefault();
     if (!validate()) return;
 
+    if (turnstileRequired && !turnstileToken) {
+      setSubmitError("Please complete the security check and try again.");
+      return;
+    }
+
     setIsPending(true);
     setSubmitError("");
 
@@ -63,11 +74,14 @@ export function ContactForm() {
       email: form.email.trim(),
       message: form.message.trim(),
       companyWebsite,
+      turnstileToken: turnstileToken ?? undefined,
     });
 
     setIsPending(false);
 
     if (!result.ok) {
+      setTurnstileToken(null);
+      setTurnstileReset((value) => value + 1);
       setSubmitError(
         result.error ??
           `We could not send your message. Please try again or call ${siteConfig.contact.phone}.`,
@@ -172,6 +186,8 @@ export function ContactForm() {
 
       <HoneypotField value={companyWebsite} onChange={setCompanyWebsite} />
 
+      <TurnstileWidget onToken={setTurnstileToken} resetSignal={turnstileReset} />
+
       <FormValidationStatus
         errors={[errors.name, errors.email, errors.message]}
       />
@@ -182,7 +198,7 @@ export function ContactForm() {
 
       <Button
         type="submit"
-        disabled={isPending}
+        disabled={isPending || (turnstileRequired && !turnstileToken)}
         className="mt-2 bg-primary text-primary-foreground hover:bg-secondary disabled:bg-gray-300 disabled:text-gray-600"
       >
         {isPending ? "Sending..." : "Send message"}
