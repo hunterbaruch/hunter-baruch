@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
-import { siteConfig } from "@/lib/site";
 import { trackEvent } from "@/lib/utils";
 
 export function HeroVideoSection() {
@@ -59,14 +58,55 @@ export function HeroVideoSection() {
       <div className="absolute inset-0 bg-gradient-to-b from-black/0 to-black" />
       <div className="absolute inset-0 bg-tertiary/50" />
       <div
-        className="pointer-events-none absolute bottom-8 right-12 z-10 hidden border-2 border-primary bg-white p-2 md:block lg:bottom-10 lg:right-16 lg:p-3"
+        className="pointer-events-none absolute bottom-8 right-12 z-10 hidden md:block lg:bottom-10 lg:right-16"
         aria-hidden
       >
-        <img
-          src={siteConfig.logo}
-          alt=""
-          className="h-24 w-auto lg:h-28"
-        />
+        <div
+          className="hb-hero-logo relative overflow-hidden rounded-2xl"
+          style={{ padding: 2, backgroundColor: "hsl(158 88% 38%)" }}
+        >
+          <span className="hb-hero-logo-spin" aria-hidden />
+          <div
+            className="relative z-[1] rounded-[14px] px-4 py-4 lg:px-5 lg:py-5"
+            style={{
+              backgroundColor: "#000",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.1)",
+            }}
+          >
+            <img
+              src="/hb-logo-hero.svg"
+              alt=""
+              className="h-24 w-auto lg:h-28"
+            />
+          </div>
+        </div>
+        <style>{`
+          .hb-hero-logo-spin {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            z-index: 0;
+            width: 250%;
+            height: 250%;
+            translate: -50% -50%;
+            background: conic-gradient(
+              from 0deg,
+              hsl(158 88% 38%) 0deg,
+              hsl(158 88% 38%) 320deg,
+              hsl(158 100% 75%) 332deg,
+              #fff 340deg,
+              hsl(158 100% 75%) 348deg,
+              hsl(158 88% 38%) 360deg
+            );
+            animation: hb-hero-logo-spin 5.5s linear infinite;
+          }
+          @keyframes hb-hero-logo-spin {
+            to { transform: rotate(360deg); }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .hb-hero-logo-spin { animation: none; }
+          }
+        `}</style>
       </div>
       <div className="container-shell relative z-10 w-full px-8 pb-8 pt-16 lg:px-12 lg:pb-10">
         <div ref={contentRef} className="max-w-2xl text-left">
@@ -94,14 +134,14 @@ export function HeroVideoSection() {
             <button
               type="button"
               onClick={handleQuoteClick}
-              className="inline-flex items-center gap-3 rounded-pill bg-primary px-5 py-3 text-base font-normal text-primary-foreground transition-colors duration-200 ease-in hover:bg-secondary"
+              className="inline-flex items-center gap-3 rounded-pill border border-white/25 bg-primary/45 px-5 py-3 text-base font-normal text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] backdrop-blur-md transition-colors duration-200 ease-in hover:bg-primary/60"
             >
-              <span className="text-base font-normal text-primary-foreground">
+              <span className="text-base font-normal text-white">
                 Get My Quote
               </span>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="ml-2 h-6 w-6"
+                className="ml-2 h-6 w-6 text-white"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
