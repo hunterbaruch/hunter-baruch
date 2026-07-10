@@ -1,18 +1,20 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { trackEvent } from "@/lib/utils";
 
 type FormState = {
   name: string;
   email: string;
-  phone: string;
   message: string;
 };
 
 const initialState: FormState = {
   name: "",
   email: "",
-  phone: "",
   message: "",
 };
 
@@ -24,13 +26,17 @@ export function ContactForm() {
   function validate(): boolean {
     const nextErrors: Partial<FormState> = {};
 
-    if (!form.name.trim()) nextErrors.name = "Name is required.";
-    if (!form.email.trim()) {
-      nextErrors.email = "Email is required.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      nextErrors.email = "Enter a valid email address.";
+    if (form.name.trim().length < 2) {
+      nextErrors.name = "Enter your name.";
     }
-    if (!form.message.trim()) nextErrors.message = "Message is required.";
+    if (!form.email.trim()) {
+      nextErrors.email = "Enter a valid email.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      nextErrors.email = "Enter a valid email.";
+    }
+    if (form.message.trim().length < 10) {
+      nextErrors.message = "Add a few details so we can help.";
+    }
 
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -43,98 +49,93 @@ export function ContactForm() {
     setSubmitted(true);
     setForm(initialState);
     setErrors({});
+    trackEvent("contact_submit");
   }
 
   if (submitted) {
     return (
-      <div className="rounded-xl border border-accent/30 bg-accent/5 p-8 text-center">
-        <h3 className="text-lg font-semibold text-primary">Thank you!</h3>
-        <p className="mt-2 text-muted">
-          Your message has been received. We will be in touch shortly.
-        </p>
-        <button
-          type="button"
-          className="mt-6 text-sm font-medium text-accent hover:underline"
-          onClick={() => setSubmitted(false)}
-        >
-          Send another message
-        </button>
+      <div className="rounded-lg border border-success bg-accent p-6">
+        <div className="flex items-start gap-4">
+          <svg
+            className="h-8 w-8 text-success"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            aria-hidden
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M9 12l2 2 4-4"
+            />
+          </svg>
+          <div>
+            <h3 className="text-xl font-medium text-gray-900">Message sent</h3>
+            <p className="mt-2 text-base font-light leading-7 text-gray-700">
+              Thank you. We will reply as soon as possible during business
+              hours.
+            </p>
+            <button
+              type="button"
+              className="mt-6 text-sm font-normal text-primary hover:underline"
+              onClick={() => setSubmitted(false)}
+            >
+              Send another message
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6" noValidate>
-      <div>
-        <label htmlFor="name" className="block text-sm font-medium text-primary">
-          Name
-        </label>
-        <input
-          id="name"
-          type="text"
+    <form onSubmit={handleSubmit} className="grid gap-4" noValidate>
+      <label className="grid gap-2">
+        <span className="text-sm font-normal text-foreground">Name</span>
+        <Input
           value={form.name}
           onChange={(e) => setForm({ ...form, name: e.target.value })}
-          className="mt-2 w-full rounded-lg border border-border px-4 py-3 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+          className="min-h-[48px] text-foreground"
         />
         {errors.name && (
-          <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+          <span className="text-sm font-normal text-warning">{errors.name}</span>
         )}
-      </div>
+      </label>
 
-      <div>
-        <label htmlFor="email" className="block text-sm font-medium text-primary">
-          Email
-        </label>
-        <input
-          id="email"
+      <label className="grid gap-2">
+        <span className="text-sm font-normal text-foreground">Email</span>
+        <Input
           type="email"
           value={form.email}
           onChange={(e) => setForm({ ...form, email: e.target.value })}
-          className="mt-2 w-full rounded-lg border border-border px-4 py-3 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+          className="min-h-[48px] text-foreground"
         />
         {errors.email && (
-          <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+          <span className="text-sm font-normal text-warning">{errors.email}</span>
         )}
-      </div>
+      </label>
 
-      <div>
-        <label htmlFor="phone" className="block text-sm font-medium text-primary">
-          Phone <span className="text-muted">(optional)</span>
-        </label>
-        <input
-          id="phone"
-          type="tel"
-          value={form.phone}
-          onChange={(e) => setForm({ ...form, phone: e.target.value })}
-          className="mt-2 w-full rounded-lg border border-border px-4 py-3 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
-        />
-      </div>
-
-      <div>
-        <label
-          htmlFor="message"
-          className="block text-sm font-medium text-primary"
-        >
-          Message
-        </label>
-        <textarea
-          id="message"
-          rows={5}
+      <label className="grid gap-2">
+        <span className="text-sm font-normal text-foreground">Message</span>
+        <Textarea
           value={form.message}
           onChange={(e) => setForm({ ...form, message: e.target.value })}
-          className="mt-2 w-full rounded-lg border border-border px-4 py-3 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+          className="min-h-[160px] text-foreground"
         />
         {errors.message && (
-          <p className="mt-1 text-sm text-red-600">{errors.message}</p>
+          <span className="text-sm font-normal text-warning">
+            {errors.message}
+          </span>
         )}
-      </div>
+      </label>
 
-      <button
+      <Button
         type="submit"
-        className="w-full rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary-light md:w-auto"
+        className="mt-2 bg-primary text-primary-foreground hover:bg-secondary"
       >
-        Send Message
-      </button>
+        Send message
+      </Button>
     </form>
   );
 }

@@ -1,9 +1,20 @@
+export function scrollToId(id: string) {
+  const element = document.getElementById(id);
+  if (!element) return;
+  element.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+type AnalyticsWindow = Window & {
+  dataLayer?: Array<Record<string, unknown>>;
+};
+
 export function trackEvent(name: string, payload?: Record<string, unknown>) {
   try {
-    if (typeof window !== "undefined" && (window as any).dataLayer) {
-      (window as any).dataLayer.push({ event: name, ...payload });
+    const analyticsWindow = window as AnalyticsWindow;
+    if (typeof window !== "undefined" && analyticsWindow.dataLayer) {
+      analyticsWindow.dataLayer.push({ event: name, ...payload });
     }
-  } catch (e) {
+  } catch {
     // swallow errors in analytics helper
   }
 }
