@@ -27,6 +27,10 @@ export default async function AdminLeadsPage() {
         <form
           action={async () => {
             "use server";
+            const session = await auth();
+            if (!session?.user?.id || session.user.role !== "admin") {
+              redirect("/admin/login");
+            }
             const { runRetentionCleanup } = await import(
               "@/lib/leadRetentionCleanup"
             );

@@ -1,35 +1,54 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 
 const STORAGE_KEY = "hbf-cookie-consent";
+const CHANGE_EVENT = "hbf-cookie-consent-change";
+
+function subscribeConsent(onStoreChange: () => void) {
+  if (typeof window === "undefined") return () => {};
+
+  window.addEventListener(CHANGE_EVENT, onStoreChange);
+  window.addEventListener("storage", onStoreChange);
+  return () => {
+    window.removeEventListener(CHANGE_EVENT, onStoreChange);
+    window.removeEventListener("storage", onStoreChange);
+  };
+}
+
+function getConsentVisible(): boolean {
+  try {
+    return !window.localStorage.getItem(STORAGE_KEY);
+  } catch {
+    return true;
+  }
+}
+
+function getServerConsentVisible(): boolean {
+  // Avoid SSR flash; banner appears after client hydration if needed.
+  return false;
+}
 
 /**
  * Lightweight cookie notice for visitors outside Georgia / general online traffic.
  * Not a full CMP — confirm with counsel if a stricter banner is required.
  */
 export function CookieConsentBanner() {
-  const [visible, setVisible] = useState(false);
+  const visible = useSyncExternalStore(
+    subscribeConsent,
+    getConsentVisible,
+    getServerConsentVisible,
+  );
 
-  useEffect(() => {
-    try {
-      if (!window.localStorage.getItem(STORAGE_KEY)) {
-        setVisible(true);
-      }
-    } catch {
-      setVisible(true);
-    }
-  }, []);
-
-  function dismiss() {
+  const dismiss = useCallback(() => {
     try {
       window.localStorage.setItem(STORAGE_KEY, "dismissed");
     } catch {
       // ignore storage failures
     }
-    setVisible(false);
-  }
+    window.dispatchEvent(new Event(CHANGE_EVENT));
+  }, []);
 
   if (!visible) return null;
 

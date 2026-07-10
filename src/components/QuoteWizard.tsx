@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
 import {
   Card,
   CardContent,
@@ -22,9 +22,13 @@ import {
 } from "@/lib/quoteEstimate";
 import {
   buildQuoteSummary,
-  defaultQuoteWizardSnapshot,
-  QUOTE_WIZARD_STORAGE_KEY,
+  clearQuoteWizardSnapshot,
+  getQuoteWizardStorageRaw,
+  getServerQuoteWizardStorageRaw,
+  parseQuoteWizardStorageRaw,
+  subscribeQuoteWizardStorage,
   topicFromCoverageType,
+  writeQuoteWizardSnapshot,
   type CoverageType,
   type QuoteWizardSnapshot,
 } from "@/lib/quoteWizardStorage";
@@ -69,7 +73,27 @@ function isValidEmail(value: string) {
 export function QuoteWizard() {
   const router = useRouter();
   const [step, setStep] = useState(0);
-  const [state, setState] = useState<QuoteWizardSnapshot>(defaultQuoteWizardSnapshot);
+  const storedRaw = useSyncExternalStore(
+    subscribeQuoteWizardStorage,
+    getQuoteWizardStorageRaw,
+    getServerQuoteWizardStorageRaw,
+  );
+  const state = useMemo(
+    () => parseQuoteWizardStorageRaw(storedRaw),
+    [storedRaw],
+  );
+  const setState = useCallback(
+    (
+      update:
+        | QuoteWizardSnapshot
+        | ((current: QuoteWizardSnapshot) => QuoteWizardSnapshot),
+    ) => {
+      const current = parseQuoteWizardStorageRaw(getQuoteWizardStorageRaw());
+      const next = typeof update === "function" ? update(current) : update;
+      writeQuoteWizardSnapshot(next);
+    },
+    [],
+  );
   const [fieldErrors, setFieldErrors] = useState<
     Partial<Record<keyof QuoteWizardSnapshot | "tcpaConsent", string>>
   >({});
@@ -85,20 +109,6 @@ export function QuoteWizard() {
   const isLifeFlow = state.coverageType === "Life";
   const showEstimate = isLifeFlow && !submittedId;
   const totalSteps = isLifeFlow ? LIFE_STEP_COUNT : 1;
-
-  useEffect(() => {
-    const saved = window.localStorage.getItem(QUOTE_WIZARD_STORAGE_KEY);
-    if (!saved) return;
-    try {
-      setState({ ...defaultQuoteWizardSnapshot, ...JSON.parse(saved) });
-    } catch {
-      window.localStorage.removeItem(QUOTE_WIZARD_STORAGE_KEY);
-    }
-  }, []);
-
-  useEffect(() => {
-    window.localStorage.setItem(QUOTE_WIZARD_STORAGE_KEY, JSON.stringify(state));
-  }, [state]);
 
   const estimate = useMemo(
     () =>
@@ -236,7 +246,7 @@ export function QuoteWizard() {
     }
 
     setSubmittedId(result.referenceId ?? "");
-    window.localStorage.removeItem(QUOTE_WIZARD_STORAGE_KEY);
+    clearQuoteWizardSnapshot();
     trackEvent("quote_submitted", {
       coverageType: state.coverageType,
       coverageAmount: state.coverageAmount,

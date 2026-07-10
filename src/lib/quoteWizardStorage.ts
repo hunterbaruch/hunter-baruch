@@ -9,6 +9,9 @@ import {
 
 export const QUOTE_WIZARD_STORAGE_KEY = "quote-wizard";
 
+/** Same-tab notification when quote wizard storage is written. */
+const QUOTE_WIZARD_STORAGE_EVENT = "quote-wizard-storage";
+
 export type CoverageType = "" | "Life" | "Medicare" | "Advocacy";
 
 export type QuoteWizardSnapshot = {
@@ -53,14 +56,69 @@ const TOPIC_BY_COVERAGE: Record<Exclude<CoverageType, "">, ConsultationTopic> = 
 export function readQuoteWizardSnapshot(): QuoteWizardSnapshot | null {
   if (typeof window === "undefined") return null;
 
-  const saved = window.localStorage.getItem(QUOTE_WIZARD_STORAGE_KEY);
+  const saved = getQuoteWizardStorageRaw();
   if (!saved) return null;
 
+  return parseQuoteWizardStorageRaw(saved);
+}
+
+/** Subscribe to quote-wizard localStorage changes (cross-tab + same-tab). */
+export function subscribeQuoteWizardStorage(onStoreChange: () => void) {
+  if (typeof window === "undefined") return () => {};
+
+  window.addEventListener("storage", onStoreChange);
+  window.addEventListener(QUOTE_WIZARD_STORAGE_EVENT, onStoreChange);
+  return () => {
+    window.removeEventListener("storage", onStoreChange);
+    window.removeEventListener(QUOTE_WIZARD_STORAGE_EVENT, onStoreChange);
+  };
+}
+
+export function getQuoteWizardStorageRaw(): string {
   try {
-    return { ...defaultQuoteWizardSnapshot, ...JSON.parse(saved) };
+    return window.localStorage.getItem(QUOTE_WIZARD_STORAGE_KEY) ?? "";
   } catch {
+    return "";
+  }
+}
+
+export function getServerQuoteWizardStorageRaw(): string {
+  return "";
+}
+
+export function parseQuoteWizardStorageRaw(raw: string): QuoteWizardSnapshot {
+  if (!raw) return defaultQuoteWizardSnapshot;
+
+  try {
+    return { ...defaultQuoteWizardSnapshot, ...JSON.parse(raw) };
+  } catch {
+    try {
+      window.localStorage.removeItem(QUOTE_WIZARD_STORAGE_KEY);
+    } catch {
+      // ignore storage failures
+    }
+    return defaultQuoteWizardSnapshot;
+  }
+}
+
+export function writeQuoteWizardSnapshot(snapshot: QuoteWizardSnapshot) {
+  try {
+    window.localStorage.setItem(
+      QUOTE_WIZARD_STORAGE_KEY,
+      JSON.stringify(snapshot),
+    );
+    window.dispatchEvent(new Event(QUOTE_WIZARD_STORAGE_EVENT));
+  } catch {
+    // ignore storage failures
+  }
+}
+
+export function clearQuoteWizardSnapshot() {
+  try {
     window.localStorage.removeItem(QUOTE_WIZARD_STORAGE_KEY);
-    return null;
+    window.dispatchEvent(new Event(QUOTE_WIZARD_STORAGE_EVENT));
+  } catch {
+    // ignore storage failures
   }
 }
 

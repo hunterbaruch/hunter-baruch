@@ -5,11 +5,20 @@
  *   npx tsx scripts/test-resend.ts
  *   npx tsx scripts/test-resend.ts --send
  *
- * Requires RESEND_API_KEY, LEAD_NOTIFICATION_EMAIL, LEAD_FROM_EMAIL in .env
+ * Reads .env / .env.local via @next/env (same as Next.js).
  */
 
+import { loadEnvConfig } from "@next/env";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { sendLeadNotification } from "../src/lib/sendLeadNotification";
 import { getSiteBaseUrl } from "../src/lib/siteUrl";
+
+const projectDir = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "..",
+);
+loadEnvConfig(projectDir, true);
 
 const shouldSend = process.argv.includes("--send");
 

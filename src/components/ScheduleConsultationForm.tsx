@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useMemo, useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
 import { HoneypotField } from "@/components/HoneypotField";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,10 @@ import { TurnstileWidget } from "@/components/TurnstileWidget";
 import { Textarea } from "@/components/ui/textarea";
 import {
   buildSchedulePrefill,
-  readQuoteWizardSnapshot,
+  getQuoteWizardStorageRaw,
+  getServerQuoteWizardStorageRaw,
+  parseQuoteWizardStorageRaw,
+  subscribeQuoteWizardStorage,
   type ConsultationTopic,
 } from "@/lib/quoteWizardStorage";
 import { submitLead } from "@/lib/submitLead";
@@ -34,19 +37,33 @@ const TOPIC_OPTIONS: ConsultationTopic[] = [
   "Patient Advocacy",
 ];
 
-const emptyState: FormState = {
-  topic: "",
-  name: "",
-  email: "",
-  phone: "",
-  preferredCallbackMethod: "",
-  message: "",
-};
-
 export function ScheduleConsultationForm() {
-  const [form, setForm] = useState<FormState>(emptyState);
-  const [quoteSummary, setQuoteSummary] = useState<string | null>(null);
-  const [healthClass, setHealthClass] = useState<string | null>(null);
+  const storedRaw = useSyncExternalStore(
+    subscribeQuoteWizardStorage,
+    getQuoteWizardStorageRaw,
+    getServerQuoteWizardStorageRaw,
+  );
+  const snapshot = useMemo(
+    () => (storedRaw ? parseQuoteWizardStorageRaw(storedRaw) : null),
+    [storedRaw],
+  );
+  const prefill = useMemo(() => buildSchedulePrefill(snapshot), [snapshot]);
+  const quoteSummary = prefill.quoteSummary;
+  const healthClass = snapshot?.healthClass ?? null;
+
+  // Local edits overlay prefill so we avoid setState-in-effect hydration.
+  const [edits, setEdits] = useState<Partial<FormState>>({});
+  const form: FormState = {
+    topic: edits.topic ?? prefill.topic,
+    name: edits.name ?? prefill.name,
+    email: edits.email ?? prefill.email,
+    phone: edits.phone ?? prefill.phone,
+    preferredCallbackMethod:
+      edits.preferredCallbackMethod ?? prefill.preferredCallbackMethod,
+    message: edits.message ?? prefill.message,
+  };
+  const setForm = (next: FormState) => setEdits(next);
+
   const [errors, setErrors] = useState<
     Partial<Record<keyof FormState | "tcpaConsent", string>>
   >({});
@@ -58,21 +75,6 @@ export function ScheduleConsultationForm() {
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileReset, setTurnstileReset] = useState(0);
   const turnstileRequired = isTurnstileEnforcedOnClient();
-
-  useEffect(() => {
-    const snapshot = readQuoteWizardSnapshot();
-    const prefill = buildSchedulePrefill(snapshot);
-    setForm({
-      topic: prefill.topic,
-      name: prefill.name,
-      email: prefill.email,
-      phone: prefill.phone,
-      preferredCallbackMethod: prefill.preferredCallbackMethod,
-      message: prefill.message,
-    });
-    setQuoteSummary(prefill.quoteSummary);
-    setHealthClass(snapshot?.healthClass ?? null);
-  }, []);
 
   function validate(): boolean {
     const nextErrors: Partial<Record<keyof FormState | "tcpaConsent", string>> =
