@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { submitLead } from "@/lib/submitLead";
 import { trackEvent } from "@/lib/utils";
 
 type FormState = {
@@ -21,7 +22,9 @@ const initialState: FormState = {
 export function ContactForm() {
   const [form, setForm] = useState<FormState>(initialState);
   const [errors, setErrors] = useState<Partial<FormState>>({});
-  const [submitted, setSubmitted] = useState(false);
+  const [submittedId, setSubmittedId] = useState("");
+  const [isPending, setIsPending] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   function validate(): boolean {
     const nextErrors: Partial<FormState> = {};
@@ -42,17 +45,34 @@ export function ContactForm() {
     return Object.keys(nextErrors).length === 0;
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!validate()) return;
 
-    setSubmitted(true);
+    setIsPending(true);
+    setSubmitError("");
+
+    const result = await submitLead({
+      source: "contact",
+      name: form.name.trim(),
+      email: form.email.trim(),
+      message: form.message.trim(),
+    });
+
+    setIsPending(false);
+
+    if (!result.ok) {
+      setSubmitError(result.error ?? "We could not send your message.");
+      return;
+    }
+
+    setSubmittedId(result.referenceId ?? "");
     setForm(initialState);
     setErrors({});
     trackEvent("contact_submit");
   }
 
-  if (submitted) {
+  if (submittedId) {
     return (
       <div className="rounded-lg border border-success bg-accent p-6">
         <div className="flex items-start gap-4">
@@ -74,12 +94,13 @@ export function ContactForm() {
             <h3 className="text-xl font-medium text-gray-900">Message sent</h3>
             <p className="mt-2 text-base font-light leading-7 text-gray-700">
               Thank you. We will reply as soon as possible during business
-              hours.
+              hours. Reference ID:{" "}
+              <span className="font-mono text-sm text-foreground">{submittedId}</span>
             </p>
             <button
               type="button"
               className="mt-6 text-sm font-normal text-primary hover:underline"
-              onClick={() => setSubmitted(false)}
+              onClick={() => setSubmittedId("")}
             >
               Send another message
             </button>
@@ -130,11 +151,16 @@ export function ContactForm() {
         )}
       </label>
 
+      {submitError && (
+        <p className="text-sm font-normal text-warning">{submitError}</p>
+      )}
+
       <Button
         type="submit"
-        className="mt-2 bg-primary text-primary-foreground hover:bg-secondary"
+        disabled={isPending}
+        className="mt-2 bg-primary text-primary-foreground hover:bg-secondary disabled:bg-gray-300 disabled:text-gray-600"
       >
-        Send message
+        {isPending ? "Sending..." : "Send message"}
       </Button>
     </form>
   );

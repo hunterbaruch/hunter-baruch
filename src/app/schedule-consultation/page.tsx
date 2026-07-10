@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ContactForm } from "@/components/ContactForm";
+import { ScheduleConsultationForm } from "@/components/ScheduleConsultationForm";
 import { PageHero } from "@/components/PageHero";
 import { siteConfig } from "@/lib/site";
 
@@ -76,7 +76,7 @@ export default function ScheduleConsultationPage() {
           </div>
 
           <div className="rounded-xl border border-gray-700 bg-card p-8">
-            <ContactForm />
+            <ScheduleConsultationForm />
           </div>
         </div>
       </section>

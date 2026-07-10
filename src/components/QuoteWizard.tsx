@@ -17,43 +17,19 @@ import {
   calculatePremiumEstimate,
   formatCoverage,
   formatCurrency,
-  type Gender,
   type HealthClass,
   type TermLength,
 } from "@/lib/quoteEstimate";
+import {
+  buildQuoteSummary,
+  defaultQuoteWizardSnapshot,
+  QUOTE_WIZARD_STORAGE_KEY,
+  topicFromCoverageType,
+  type CoverageType,
+  type QuoteWizardSnapshot,
+} from "@/lib/quoteWizardStorage";
+import { submitLead } from "@/lib/submitLead";
 import { trackEvent } from "@/lib/utils";
-
-type CoverageType = "" | "Life" | "Medicare" | "Advocacy";
-
-type WizardState = {
-  coverageType: CoverageType;
-  coverageAmount: number;
-  termLength: TermLength;
-  age: number;
-  gender: Gender;
-  healthClass: HealthClass;
-  zipCode: string;
-  fullName: string;
-  email: string;
-  phone: string;
-  preferredCallbackMethod: string;
-};
-
-const STORAGE_KEY = "quote-wizard";
-
-const defaultState: WizardState = {
-  coverageType: "",
-  coverageAmount: 500_000,
-  termLength: 20,
-  age: 35,
-  gender: "male",
-  healthClass: "good",
-  zipCode: "",
-  fullName: "",
-  email: "",
-  phone: "",
-  preferredCallbackMethod: "",
-};
 
 const LIFE_STEP_COUNT = 8;
 
@@ -86,8 +62,8 @@ function isValidEmail(value: string) {
 export function QuoteWizard() {
   const router = useRouter();
   const [step, setStep] = useState(0);
-  const [state, setState] = useState<WizardState>(defaultState);
-  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof WizardState, string>>>({});
+  const [state, setState] = useState<QuoteWizardSnapshot>(defaultQuoteWizardSnapshot);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof QuoteWizardSnapshot, string>>>({});
   const [submittedId, setSubmittedId] = useState("");
   const [isPending, setIsPending] = useState(false);
 
@@ -96,17 +72,17 @@ export function QuoteWizard() {
   const totalSteps = isLifeFlow ? LIFE_STEP_COUNT : 1;
 
   useEffect(() => {
-    const saved = window.localStorage.getItem(STORAGE_KEY);
+    const saved = window.localStorage.getItem(QUOTE_WIZARD_STORAGE_KEY);
     if (!saved) return;
     try {
-      setState({ ...defaultState, ...JSON.parse(saved) });
+      setState({ ...defaultQuoteWizardSnapshot, ...JSON.parse(saved) });
     } catch {
-      window.localStorage.removeItem(STORAGE_KEY);
+      window.localStorage.removeItem(QUOTE_WIZARD_STORAGE_KEY);
     }
   }, []);
 
   useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    window.localStorage.setItem(QUOTE_WIZARD_STORAGE_KEY, JSON.stringify(state));
   }, [state]);
 
   const estimate = useMemo(
@@ -125,7 +101,10 @@ export function QuoteWizard() {
     ? 100
     : ((step + 1) / totalSteps) * 100;
 
-  const updateState = <K extends keyof WizardState>(key: K, value: WizardState[K]) => {
+  const updateState = <K extends keyof QuoteWizardSnapshot>(
+    key: K,
+    value: QuoteWizardSnapshot[K],
+  ) => {
     setState((current) => ({ ...current, [key]: value }));
     setFieldErrors((current) => {
       if (!current[key]) return current;
@@ -136,7 +115,7 @@ export function QuoteWizard() {
   };
 
   const validateStep = (): boolean => {
-    const errors: Partial<Record<keyof WizardState, string>> = {};
+    const errors: Partial<Record<keyof QuoteWizardSnapshot, string>> = {};
 
     if (step === 0 && !state.coverageType) {
       errors.coverageType = "Select a coverage type.";
@@ -192,19 +171,43 @@ export function QuoteWizard() {
     if (!validateStep()) return;
 
     setIsPending(true);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 700));
-      const id = Math.random().toString(36).slice(2, 9).toUpperCase();
-      setSubmittedId(id);
-      window.localStorage.removeItem(STORAGE_KEY);
-      trackEvent("quote_submitted", {
-        coverageType: state.coverageType,
-        coverageAmount: state.coverageAmount,
-        termLength: state.termLength,
+
+    const quoteSummary = buildQuoteSummary(state);
+    const topic = topicFromCoverageType(state.coverageType);
+
+    const result = await submitLead({
+      source: "quote_wizard",
+      name: state.fullName.trim(),
+      email: state.email.trim(),
+      phone: state.phone.trim(),
+      topic: topic || "Life Insurance",
+      preferredCallbackMethod: state.preferredCallbackMethod,
+      message: [
+        "Submitted via homepage quote wizard.",
+        quoteSummary,
+        state.zipCode.trim() ? `ZIP: ${state.zipCode.trim()}` : null,
+      ]
+        .filter(Boolean)
+        .join("\n\n"),
+      quoteSummary,
+    });
+
+    setIsPending(false);
+
+    if (!result.ok) {
+      setFieldErrors({
+        email: result.error ?? "We could not submit your request. Please try again.",
       });
-    } finally {
-      setIsPending(false);
+      return;
     }
+
+    setSubmittedId(result.referenceId ?? "");
+    window.localStorage.removeItem(QUOTE_WIZARD_STORAGE_KEY);
+    trackEvent("quote_submitted", {
+      coverageType: state.coverageType,
+      coverageAmount: state.coverageAmount,
+      termLength: state.termLength,
+    });
   };
 
   const isLastLifeStep = isLifeFlow && step === LIFE_STEP_COUNT - 1;

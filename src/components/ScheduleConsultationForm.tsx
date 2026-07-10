@@ -1,0 +1,264 @@
+"use client";
+
+import { FormEvent, useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  buildSchedulePrefill,
+  readQuoteWizardSnapshot,
+  type ConsultationTopic,
+} from "@/lib/quoteWizardStorage";
+import { submitLead } from "@/lib/submitLead";
+import { trackEvent } from "@/lib/utils";
+
+type FormState = {
+  topic: ConsultationTopic | "";
+  name: string;
+  email: string;
+  phone: string;
+  preferredCallbackMethod: string;
+  message: string;
+};
+
+const TOPIC_OPTIONS: ConsultationTopic[] = [
+  "Life Insurance",
+  "Medicare Guidance",
+  "Patient Advocacy",
+];
+
+const emptyState: FormState = {
+  topic: "",
+  name: "",
+  email: "",
+  phone: "",
+  preferredCallbackMethod: "",
+  message: "",
+};
+
+export function ScheduleConsultationForm() {
+  const [form, setForm] = useState<FormState>(emptyState);
+  const [quoteSummary, setQuoteSummary] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
+  const [submittedId, setSubmittedId] = useState("");
+  const [isPending, setIsPending] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+
+  useEffect(() => {
+    const snapshot = readQuoteWizardSnapshot();
+    const prefill = buildSchedulePrefill(snapshot);
+    setForm({
+      topic: prefill.topic,
+      name: prefill.name,
+      email: prefill.email,
+      phone: prefill.phone,
+      preferredCallbackMethod: prefill.preferredCallbackMethod,
+      message: prefill.message,
+    });
+    setQuoteSummary(prefill.quoteSummary);
+  }, []);
+
+  function validate(): boolean {
+    const nextErrors: Partial<Record<keyof FormState, string>> = {};
+
+    if (!form.topic) nextErrors.topic = "Select a consultation topic.";
+    if (form.name.trim().length < 2) nextErrors.name = "Enter your name.";
+    if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      nextErrors.email = "Enter a valid email.";
+    }
+    if (form.phone.replace(/\D/g, "").length < 10) {
+      nextErrors.phone = "Enter a valid phone number.";
+    }
+    if (!form.preferredCallbackMethod) {
+      nextErrors.preferredCallbackMethod = "Select a callback method.";
+    }
+    if (form.message.trim().length < 10) {
+      nextErrors.message = "Add a short note so we know how to prepare.";
+    }
+
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!validate()) return;
+
+    setIsPending(true);
+    setSubmitError("");
+
+    const result = await submitLead({
+      source: "schedule",
+      name: form.name.trim(),
+      email: form.email.trim(),
+      phone: form.phone.trim(),
+      topic: form.topic,
+      preferredCallbackMethod: form.preferredCallbackMethod,
+      message: form.message.trim(),
+      quoteSummary,
+    });
+
+    setIsPending(false);
+
+    if (!result.ok) {
+      setSubmitError(result.error ?? "We could not send your request.");
+      return;
+    }
+
+    setSubmittedId(result.referenceId ?? "");
+    trackEvent("schedule_consultation_submit", { topic: form.topic });
+  }
+
+  if (submittedId) {
+    return (
+      <div className="rounded-lg border border-success bg-accent p-6">
+        <div className="flex items-start gap-4">
+          <svg
+            className="h-8 w-8 text-success"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            aria-hidden
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M9 12l2 2 4-4"
+            />
+          </svg>
+          <div>
+            <h3 className="text-xl font-medium text-gray-900">Request received</h3>
+            <p className="mt-2 text-base font-light leading-7 text-gray-700">
+              We&apos;ll follow up within one business day to schedule your
+              consultation. Reference ID:{" "}
+              <span className="font-mono text-sm text-foreground">{submittedId}</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="grid gap-4" noValidate>
+      {quoteSummary && (
+        <div className="rounded-lg border border-gray-200 bg-muted p-4">
+          <p className="text-sm font-medium text-gray-900">
+            Your quote details are attached
+          </p>
+          <pre className="mt-2 whitespace-pre-wrap font-sans text-sm font-light leading-6 text-gray-700">
+            {quoteSummary}
+          </pre>
+        </div>
+      )}
+
+      <label className="grid gap-2">
+        <span className="text-sm font-normal text-foreground">Topic</span>
+        <select
+          value={form.topic}
+          onChange={(event) =>
+            setForm({ ...form, topic: event.target.value as ConsultationTopic | "" })
+          }
+          className="min-h-[48px] rounded-lg border border-input bg-card px-4 py-3 text-base font-light text-foreground"
+        >
+          <option value="">Select one</option>
+          {TOPIC_OPTIONS.map((topic) => (
+            <option key={topic} value={topic}>
+              {topic}
+            </option>
+          ))}
+        </select>
+        {errors.topic && (
+          <span className="text-sm font-normal text-warning">{errors.topic}</span>
+        )}
+      </label>
+
+      <label className="grid gap-2">
+        <span className="text-sm font-normal text-foreground">Name</span>
+        <Input
+          value={form.name}
+          onChange={(event) => setForm({ ...form, name: event.target.value })}
+          className="min-h-[48px] text-foreground"
+        />
+        {errors.name && (
+          <span className="text-sm font-normal text-warning">{errors.name}</span>
+        )}
+      </label>
+
+      <label className="grid gap-2">
+        <span className="text-sm font-normal text-foreground">Email</span>
+        <Input
+          type="email"
+          value={form.email}
+          onChange={(event) => setForm({ ...form, email: event.target.value })}
+          className="min-h-[48px] text-foreground"
+        />
+        {errors.email && (
+          <span className="text-sm font-normal text-warning">{errors.email}</span>
+        )}
+      </label>
+
+      <label className="grid gap-2">
+        <span className="text-sm font-normal text-foreground">Phone</span>
+        <Input
+          type="tel"
+          value={form.phone}
+          onChange={(event) => setForm({ ...form, phone: event.target.value })}
+          className="min-h-[48px] text-foreground"
+        />
+        {errors.phone && (
+          <span className="text-sm font-normal text-warning">{errors.phone}</span>
+        )}
+      </label>
+
+      <label className="grid gap-2">
+        <span className="text-sm font-normal text-foreground">
+          Preferred callback method
+        </span>
+        <select
+          value={form.preferredCallbackMethod}
+          onChange={(event) =>
+            setForm({ ...form, preferredCallbackMethod: event.target.value })
+          }
+          className="min-h-[48px] rounded-lg border border-input bg-card px-4 py-3 text-base font-light text-foreground"
+        >
+          <option value="">Choose one</option>
+          <option value="Phone">Phone</option>
+          <option value="Email">Email</option>
+        </select>
+        {errors.preferredCallbackMethod && (
+          <span className="text-sm font-normal text-warning">
+            {errors.preferredCallbackMethod}
+          </span>
+        )}
+      </label>
+
+      <label className="grid gap-2">
+        <span className="text-sm font-normal text-foreground">
+          Anything else we should know?
+        </span>
+        <Textarea
+          value={form.message}
+          onChange={(event) => setForm({ ...form, message: event.target.value })}
+          className="min-h-[140px] text-foreground"
+        />
+        {errors.message && (
+          <span className="text-sm font-normal text-warning">{errors.message}</span>
+        )}
+      </label>
+
+      {submitError && (
+        <p className="text-sm font-normal text-warning">{submitError}</p>
+      )}
+
+      <Button
+        type="submit"
+        disabled={isPending}
+        className="mt-2 bg-primary text-primary-foreground hover:bg-secondary disabled:bg-gray-300 disabled:text-gray-600"
+      >
+        {isPending ? "Sending..." : "Request consultation"}
+      </Button>
+    </form>
+  );
+}
