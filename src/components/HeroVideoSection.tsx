@@ -2,16 +2,11 @@
 
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
-import { siteConfig } from "@/lib/site";
 import { trackEvent } from "@/lib/utils";
-
-const LOGO_SEQUENCE_START_BEFORE_END = 2.2;
 
 export function HeroVideoSection() {
   const contentRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const logoRef = useRef<HTMLDivElement | null>(null);
-  const logoAnimatedRef = useRef(false);
 
   useEffect(() => {
     if (!contentRef.current) return;
@@ -38,69 +33,6 @@ export function HeroVideoSection() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  useEffect(() => {
-    const video = videoRef.current;
-    const logo = logoRef.current;
-    if (!video || !logo) return;
-
-    gsap.set(logo, { opacity: 0 });
-
-    const prefersReducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-    if (prefersReducedMotion) return;
-
-    let logoTimeline: gsap.core.Timeline | null = null;
-
-    const resetLogoSequence = () => {
-      logoAnimatedRef.current = false;
-      logoTimeline?.kill();
-      logoTimeline = null;
-      gsap.set(logo, { opacity: 0 });
-    };
-
-    const playLogoSequence = () => {
-      if (logoAnimatedRef.current) return;
-      logoAnimatedRef.current = true;
-
-      logoTimeline = gsap
-        .timeline()
-        .to(logo, { opacity: 1, duration: 0.7, ease: "power2.inOut" })
-        .to(logo, { opacity: 1, duration: 0.3 })
-        .to(logo, { opacity: 0, duration: 0.7, ease: "power2.inOut" });
-    };
-
-    const handleTimeUpdate = () => {
-      const duration = video.duration;
-      if (!Number.isFinite(duration) || duration <= 0) return;
-
-      const timeRemaining = duration - video.currentTime;
-      if (
-        timeRemaining <= LOGO_SEQUENCE_START_BEFORE_END &&
-        timeRemaining > 0.1
-      ) {
-        playLogoSequence();
-      }
-    };
-
-    // Native loop seeks to 0 without firing `ended`; `seeked` is reliable
-    // even when timeupdate is throttled in background tabs.
-    const handleSeeked = () => {
-      if (video.currentTime < 0.5) {
-        resetLogoSequence();
-      }
-    };
-
-    video.addEventListener("timeupdate", handleTimeUpdate);
-    video.addEventListener("seeked", handleSeeked);
-
-    return () => {
-      video.removeEventListener("timeupdate", handleTimeUpdate);
-      video.removeEventListener("seeked", handleSeeked);
-      logoTimeline?.kill();
-    };
-  }, []);
-
   const handleQuoteClick = () => {
     const target = document.getElementById("pricing");
     target?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -125,17 +57,6 @@ export function HeroVideoSection() {
       />
       <div className="absolute inset-0 bg-gradient-to-b from-black/0 to-black" />
       <div className="absolute inset-0 bg-tertiary/50" />
-      <div
-        ref={logoRef}
-        className="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center opacity-0"
-        aria-hidden
-      >
-        <img
-          src={siteConfig.logo}
-          alt=""
-          className="h-20 w-auto drop-shadow-[0_4px_24px_rgba(0,0,0,0.45)] md:h-28"
-        />
-      </div>
       <div className="container-shell relative z-10 w-full px-8 pb-8 pt-16 lg:px-12 lg:pb-10">
         <div ref={contentRef} className="max-w-2xl text-left">
           <p
