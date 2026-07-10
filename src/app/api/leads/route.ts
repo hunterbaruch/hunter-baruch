@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { persistLead } from "@/lib/persistLead";
 import type { LeadPayload } from "@/lib/submitLead";
 
 function isValidEmail(value: string) {
@@ -105,19 +106,39 @@ export async function POST(request: Request) {
     );
   }
 
-  const referenceId = Math.random().toString(36).slice(2, 9).toUpperCase();
-  const emailSent = await sendLeadEmail(payload, referenceId);
-
-  if (!emailSent && process.env.NODE_ENV === "production") {
+  if (!process.env.DATABASE_URL) {
+    console.error("[leads] DATABASE_URL is not configured.");
     return NextResponse.json(
       {
         ok: false,
         error:
-          "We could not deliver your request right now. Please call or email us directly.",
+          "We could not save your request right now. Please call or email us directly.",
       },
       { status: 503 },
     );
   }
 
-  return NextResponse.json({ ok: true, referenceId });
+  let lead;
+
+  try {
+    lead = await persistLead(payload);
+  } catch (error) {
+    console.error("[leads] Database error:", error);
+    return NextResponse.json(
+      {
+        ok: false,
+        error:
+          "We could not save your request right now. Please call or email us directly.",
+      },
+      { status: 503 },
+    );
+  }
+
+  const emailSent = await sendLeadEmail(payload, lead.referenceId);
+
+  if (!emailSent) {
+    console.warn(`[leads] Lead ${lead.referenceId} saved without email delivery.`);
+  }
+
+  return NextResponse.json({ ok: true, referenceId: lead.referenceId });
 }
