@@ -11,8 +11,35 @@ export const siteConfig = {
     address: "123 Financial District, Suite 400\nNew York, NY 10001",
     hours: "Monday to Friday, 8:30 AM to 5:30 PM",
   },
+  /**
+   * COMPLIANCE: Hunter must supply the real Georgia insurance license number
+   * and/or National Producer Number (NPN) before launch. Placeholders must not
+   * ship as final public copy.
+   */
+  licensing: {
+    producerName: "Hunter Baruch Financial",
+    georgiaLicenseNumber: "[GEORGIA LICENSE # — PENDING FROM HUNTER]",
+    npn: "[NPN — PENDING FROM HUNTER]",
+  },
+  /**
+   * COMPLIANCE ASSUMPTION: Standard non-affiliation line for Medicare /
+   * health-adjacent insurance marketing. Confirm with counsel whether this
+   * wording should be adjusted for Hunter's specific product lines.
+   */
+  governmentDisclaimer:
+    "This website is not connected with or endorsed by the United States government, the federal Medicare program, or any state insurance department.",
+  /**
+   * Shown near quote estimator output. Confirm exact wording with compliance
+   * if carrier or E&O guidance requires different language.
+   */
+  estimateDisclaimer:
+    "This is an estimate only and not a final quote, offer of coverage, or guarantee of insurability. Actual rates are determined by the insurance carrier upon full underwriting.",
   disclosure:
     "Investment advisory services offered through Hunter Baruch Financial. This website is for informational purposes only and does not constitute financial, legal, or medical advice. Past performance is not indicative of future results.",
+  legalLinks: [
+    { href: "/privacy-policy", label: "Privacy Policy" },
+    { href: "/terms-of-service", label: "Terms of Service" },
+  ] as const,
 };
 
 export const navLinks = [

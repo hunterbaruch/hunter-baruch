@@ -9,6 +9,12 @@ export type LeadPayload = {
   preferredCallbackMethod?: string;
   message: string;
   quoteSummary?: string | null;
+  /** Health-related — encrypted at rest on the server. */
+  healthClass?: string | null;
+  /** Honeypot field — must remain empty. */
+  companyWebsite?: string;
+  /** TCPA consent checkbox — required when phone is provided. */
+  tcpaConsent?: boolean;
 };
 
 export type LeadSubmissionResult = {

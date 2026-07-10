@@ -28,7 +28,12 @@ import {
   type CoverageType,
   type QuoteWizardSnapshot,
 } from "@/lib/quoteWizardStorage";
+import { HoneypotField } from "@/components/HoneypotField";
+import { PrivacyPolicyLink } from "@/components/PrivacyPolicyLink";
+import { FormSubmitError, FormValidationStatus } from "@/components/FormFeedback";
+import { TcpaConsentCheckbox } from "@/components/TcpaConsentCheckbox";
 import { submitLead } from "@/lib/submitLead";
+import { siteConfig } from "@/lib/site";
 import { trackEvent } from "@/lib/utils";
 
 const LIFE_STEP_COUNT = 8;
@@ -63,9 +68,14 @@ export function QuoteWizard() {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [state, setState] = useState<QuoteWizardSnapshot>(defaultQuoteWizardSnapshot);
-  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof QuoteWizardSnapshot, string>>>({});
+  const [fieldErrors, setFieldErrors] = useState<
+    Partial<Record<keyof QuoteWizardSnapshot | "tcpaConsent", string>>
+  >({});
   const [submittedId, setSubmittedId] = useState("");
   const [isPending, setIsPending] = useState(false);
+  const [companyWebsite, setCompanyWebsite] = useState("");
+  const [tcpaConsent, setTcpaConsent] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const isLifeFlow = state.coverageType === "Life";
   const showEstimate = isLifeFlow && !submittedId;
@@ -115,7 +125,9 @@ export function QuoteWizard() {
   };
 
   const validateStep = (): boolean => {
-    const errors: Partial<Record<keyof QuoteWizardSnapshot, string>> = {};
+    const errors: Partial<
+      Record<keyof QuoteWizardSnapshot | "tcpaConsent", string>
+    > = {};
 
     if (step === 0 && !state.coverageType) {
       errors.coverageType = "Select a coverage type.";
@@ -139,6 +151,10 @@ export function QuoteWizard() {
       }
       if (!state.preferredCallbackMethod) {
         errors.preferredCallbackMethod = "Select a callback method.";
+      }
+      if (state.phone.replace(/\D/g, "").length >= 10 && !tcpaConsent) {
+        errors.tcpaConsent =
+          "Please confirm consent to be contacted by phone or text.";
       }
     }
 
@@ -171,6 +187,7 @@ export function QuoteWizard() {
     if (!validateStep()) return;
 
     setIsPending(true);
+    setSubmitError("");
 
     const quoteSummary = buildQuoteSummary(state);
     const topic = topicFromCoverageType(state.coverageType);
@@ -190,14 +207,18 @@ export function QuoteWizard() {
         .filter(Boolean)
         .join("\n\n"),
       quoteSummary,
+      healthClass: state.healthClass,
+      companyWebsite,
+      tcpaConsent,
     });
 
     setIsPending(false);
 
     if (!result.ok) {
-      setFieldErrors({
-        email: result.error ?? "We could not submit your request. Please try again.",
-      });
+      setSubmitError(
+        result.error ??
+          `We could not submit your request. Please try again or call ${siteConfig.contact.phone}.`,
+      );
       return;
     }
 
@@ -379,6 +400,7 @@ export function QuoteWizard() {
                             key={term}
                             type="button"
                             onClick={() => updateState("termLength", term)}
+                            aria-pressed={state.termLength === term}
                             className={`rounded-xl border px-4 py-4 text-center transition-colors ${
                               state.termLength === term
                                 ? "border-primary bg-accent text-gray-900 shadow-sm"
@@ -453,6 +475,7 @@ export function QuoteWizard() {
                             key={option.value}
                             type="button"
                             onClick={() => updateState("gender", option.value)}
+                            aria-pressed={state.gender === option.value}
                             className={`rounded-xl border px-4 py-5 text-center text-lg font-medium transition-colors ${
                               state.gender === option.value
                                 ? "border-primary bg-accent text-gray-900 shadow-sm"
@@ -477,12 +500,17 @@ export function QuoteWizard() {
                           situation.
                         </p>
                       </div>
-                      <div className="grid gap-3 sm:grid-cols-2">
+                      <div
+                        className="grid gap-3 sm:grid-cols-2"
+                        role="group"
+                        aria-label="Health and tobacco status"
+                      >
                         {HEALTH_OPTIONS.map((option) => (
                           <button
                             key={option.value}
                             type="button"
                             onClick={() => updateState("healthClass", option.value)}
+                            aria-pressed={state.healthClass === option.value}
                             className={`rounded-xl border px-4 py-4 text-left transition-colors ${
                               state.healthClass === option.value
                                 ? "border-primary bg-accent shadow-sm"
@@ -587,6 +615,11 @@ export function QuoteWizard() {
                           </span>
                         )}
                       </label>
+                      <TcpaConsentCheckbox
+                        checked={tcpaConsent}
+                        onChange={setTcpaConsent}
+                        error={fieldErrors.tcpaConsent}
+                      />
                       <label className="grid gap-2">
                         <span className="text-sm font-normal text-foreground">
                           Preferred callback method
@@ -612,6 +645,22 @@ export function QuoteWizard() {
                   )}
                 </div>
 
+                <HoneypotField value={companyWebsite} onChange={setCompanyWebsite} />
+
+                <FormValidationStatus
+                  errors={[
+                    fieldErrors.coverageType,
+                    fieldErrors.zipCode,
+                    fieldErrors.fullName,
+                    fieldErrors.email,
+                    fieldErrors.phone,
+                    fieldErrors.preferredCallbackMethod,
+                    fieldErrors.tcpaConsent,
+                  ]}
+                />
+
+                {submitError && <FormSubmitError message={submitError} />}
+
                 <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">
                   <Button
                     type="button"
@@ -634,14 +683,17 @@ export function QuoteWizard() {
                         : "Next"}
                     </Button>
                   ) : isLastLifeStep ? (
-                    <Button
-                      type="button"
-                      onClick={handleSubmit}
-                      disabled={isPending}
-                      className="bg-primary text-primary-foreground hover:bg-secondary disabled:bg-gray-300 disabled:text-gray-600"
-                    >
-                      {isPending ? "Submitting..." : "Submit request"}
-                    </Button>
+                    <div className="flex flex-col items-stretch gap-3 sm:items-end">
+                      <PrivacyPolicyLink />
+                      <Button
+                        type="button"
+                        onClick={handleSubmit}
+                        disabled={isPending}
+                        className="bg-primary text-primary-foreground hover:bg-secondary disabled:bg-gray-300 disabled:text-gray-600"
+                      >
+                        {isPending ? "Submitting..." : "Submit request"}
+                      </Button>
+                    </div>
                   ) : (
                     <Button
                       type="button"
@@ -663,24 +715,22 @@ export function QuoteWizard() {
             <>
               <Card className="border border-gray-200 bg-tertiary">
                 <CardContent className="p-6 sm:p-8">
-                  <p className="text-sm font-light uppercase tracking-[0.18em] text-gray-300">
+                  <p className="text-sm font-light uppercase tracking-[0.18em] text-gray-200">
                     Your estimate
                   </p>
                   <p className="mt-4 text-4xl font-medium tracking-tight text-gray-50 sm:text-5xl">
                     {formatCurrency(estimate.lowMonthly)}–
                     {formatCurrency(estimate.highMonthly)}
-                    <span className="text-2xl font-light text-gray-300">/mo</span>
+                    <span className="text-2xl font-light text-gray-200">/mo</span>
                   </p>
-                  <p className="mt-3 text-sm font-light leading-6 text-gray-300">
+                  <p className="mt-3 text-sm font-light leading-6 text-gray-200">
                     {formatCoverage(state.coverageAmount)} · {state.termLength}-year
                     term · age {state.age}
                   </p>
 
-                  <div className="mt-6 rounded-xl border border-white/10 bg-white/5 p-4">
-                    <p className="text-xs font-light leading-5 text-gray-300">
-                      This is a preliminary estimate for planning purposes only.
-                      Your actual rate depends on underwriting and may vary. Not
-                      a quote or offer of insurance.
+                  <div className="mt-6 rounded-xl border border-white/15 bg-white/5 p-4">
+                    <p className="text-sm font-light leading-6 text-gray-100">
+                      {siteConfig.estimateDisclaimer}
                     </p>
                   </div>
 

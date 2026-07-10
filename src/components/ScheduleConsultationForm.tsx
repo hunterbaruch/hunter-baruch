@@ -2,7 +2,11 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { HoneypotField } from "@/components/HoneypotField";
 import { Input } from "@/components/ui/input";
+import { PrivacyPolicyLink } from "@/components/PrivacyPolicyLink";
+import { FormSubmitError, FormValidationStatus } from "@/components/FormFeedback";
+import { TcpaConsentCheckbox } from "@/components/TcpaConsentCheckbox";
 import { Textarea } from "@/components/ui/textarea";
 import {
   buildSchedulePrefill,
@@ -10,6 +14,7 @@ import {
   type ConsultationTopic,
 } from "@/lib/quoteWizardStorage";
 import { submitLead } from "@/lib/submitLead";
+import { siteConfig } from "@/lib/site";
 import { trackEvent } from "@/lib/utils";
 
 type FormState = {
@@ -39,10 +44,15 @@ const emptyState: FormState = {
 export function ScheduleConsultationForm() {
   const [form, setForm] = useState<FormState>(emptyState);
   const [quoteSummary, setQuoteSummary] = useState<string | null>(null);
-  const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
+  const [healthClass, setHealthClass] = useState<string | null>(null);
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof FormState | "tcpaConsent", string>>
+  >({});
   const [submittedId, setSubmittedId] = useState("");
   const [isPending, setIsPending] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [companyWebsite, setCompanyWebsite] = useState("");
+  const [tcpaConsent, setTcpaConsent] = useState(false);
 
   useEffect(() => {
     const snapshot = readQuoteWizardSnapshot();
@@ -56,10 +66,12 @@ export function ScheduleConsultationForm() {
       message: prefill.message,
     });
     setQuoteSummary(prefill.quoteSummary);
+    setHealthClass(snapshot?.healthClass ?? null);
   }, []);
 
   function validate(): boolean {
-    const nextErrors: Partial<Record<keyof FormState, string>> = {};
+    const nextErrors: Partial<Record<keyof FormState | "tcpaConsent", string>> =
+      {};
 
     if (!form.topic) nextErrors.topic = "Select a consultation topic.";
     if (form.name.trim().length < 2) nextErrors.name = "Enter your name.";
@@ -74,6 +86,10 @@ export function ScheduleConsultationForm() {
     }
     if (form.message.trim().length < 10) {
       nextErrors.message = "Add a short note so we know how to prepare.";
+    }
+    if (form.phone.replace(/\D/g, "").length >= 10 && !tcpaConsent) {
+      nextErrors.tcpaConsent =
+        "Please confirm consent to be contacted by phone or text.";
     }
 
     setErrors(nextErrors);
@@ -96,12 +112,18 @@ export function ScheduleConsultationForm() {
       preferredCallbackMethod: form.preferredCallbackMethod,
       message: form.message.trim(),
       quoteSummary,
+      healthClass,
+      companyWebsite,
+      tcpaConsent,
     });
 
     setIsPending(false);
 
     if (!result.ok) {
-      setSubmitError(result.error ?? "We could not send your request.");
+      setSubmitError(
+        result.error ??
+          `We could not send your request. Please try again or call ${siteConfig.contact.phone}.`,
+      );
       return;
     }
 
@@ -141,7 +163,7 @@ export function ScheduleConsultationForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-4" noValidate>
+    <form onSubmit={handleSubmit} className="relative grid gap-4" noValidate>
       {quoteSummary && (
         <div className="rounded-lg border border-gray-200 bg-muted p-4">
           <p className="text-sm font-medium text-gray-900">
@@ -212,6 +234,12 @@ export function ScheduleConsultationForm() {
         )}
       </label>
 
+      <TcpaConsentCheckbox
+        checked={tcpaConsent}
+        onChange={setTcpaConsent}
+        error={errors.tcpaConsent}
+      />
+
       <label className="grid gap-2">
         <span className="text-sm font-normal text-foreground">
           Preferred callback method
@@ -248,9 +276,23 @@ export function ScheduleConsultationForm() {
         )}
       </label>
 
-      {submitError && (
-        <p className="text-sm font-normal text-warning">{submitError}</p>
-      )}
+      <HoneypotField value={companyWebsite} onChange={setCompanyWebsite} />
+
+      <FormValidationStatus
+        errors={[
+          errors.topic,
+          errors.name,
+          errors.email,
+          errors.phone,
+          errors.preferredCallbackMethod,
+          errors.message,
+          errors.tcpaConsent,
+        ]}
+      />
+
+      {submitError && <FormSubmitError message={submitError} />}
+
+      <PrivacyPolicyLink />
 
       <Button
         type="submit"

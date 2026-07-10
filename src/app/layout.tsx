@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { CookieConsentBanner } from "@/components/CookieConsentBanner";
 import { siteConfig } from "@/lib/site";
 import "./globals.css";
 
@@ -43,6 +44,7 @@ export default function RootLayout({
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />
+        <CookieConsentBanner />
       </body>
     </html>
   );

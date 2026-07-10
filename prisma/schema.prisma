@@ -8,23 +8,71 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+/// Authorized staff who can view lead records (Hunter and explicitly granted users).
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  /// bcrypt hash — never store plaintext passwords
+  passwordHash String
+  /// "admin" can read all leads; extend roles only with explicit grant
+  role         String   @default("admin")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  auditLogs    AuditLog[]
+}
+
 model Lead {
-  id                      String   @id @default(cuid())
-  referenceId             String   @unique
+  id                      String    @id @default(cuid())
+  referenceId             String    @unique
   source                  String
   name                    String
   email                   String
   phone                   String?
   topic                   String?
   preferredCallbackMethod String?
-  message                 String   @db.Text
-  quoteSummary            String?  @db.Text
-  status                  String   @default("new")
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
+  message                 String    @db.Text
+  /// May contain health class and other underwriting context — stored encrypted at rest.
+  quoteSummary            String?   @db.Text
+  /// Health-related: self-reported underwriting class. Field-level encrypted (AES-256-GCM).
+  healthClass             String?   @db.Text
+  status                  String    @default("new")
+
+  /// TCPA consent record — timestamp + exact text version the prospect agreed to.
+  tcpaConsentAt           DateTime?
+  tcpaConsentTextVersion  String?
+  /// Snapshot of the exact consent language shown at submit time.
+  tcpaConsentText         String?   @db.Text
+
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  /// COMPLIANCE ASSUMPTION: default retention is 24 months from createdAt.
+  /// Hunter should confirm this period against her E&O carrier's requirements
+  /// and Georgia/NAIC data retention expectations before treating as final.
+  /// App code sets this explicitly on create; DB default covers migrations.
+  retentionExpiresAt      DateTime  @default(dbgenerated("(CURRENT_TIMESTAMP + INTERVAL '24 months')"))
+  /// Set by the retention cleanup job when a record is past retentionExpiresAt.
+  markedForDeletionAt     DateTime?
 
   @@index([createdAt(sort: Desc)])
   @@index([email])
   @@index([source])
   @@index([status])
+  @@index([retentionExpiresAt])
+  @@index([markedForDeletionAt])
+}
+
+/// Access audit trail for lead record views (and related admin actions).
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action    String
+  recordId  String
+  timestamp DateTime @default(now())
+
+  @@index([recordId])
+  @@index([userId])
+  @@index([timestamp(sort: Desc)])
 }

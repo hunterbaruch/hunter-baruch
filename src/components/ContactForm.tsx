@@ -2,9 +2,13 @@
 
 import { FormEvent, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { HoneypotField } from "@/components/HoneypotField";
 import { Input } from "@/components/ui/input";
+import { PrivacyPolicyLink } from "@/components/PrivacyPolicyLink";
+import { FormSubmitError, FormValidationStatus } from "@/components/FormFeedback";
 import { Textarea } from "@/components/ui/textarea";
 import { submitLead } from "@/lib/submitLead";
+import { siteConfig } from "@/lib/site";
 import { trackEvent } from "@/lib/utils";
 
 type FormState = {
@@ -25,6 +29,7 @@ export function ContactForm() {
   const [submittedId, setSubmittedId] = useState("");
   const [isPending, setIsPending] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [companyWebsite, setCompanyWebsite] = useState("");
 
   function validate(): boolean {
     const nextErrors: Partial<FormState> = {};
@@ -57,12 +62,16 @@ export function ContactForm() {
       name: form.name.trim(),
       email: form.email.trim(),
       message: form.message.trim(),
+      companyWebsite,
     });
 
     setIsPending(false);
 
     if (!result.ok) {
-      setSubmitError(result.error ?? "We could not send your message.");
+      setSubmitError(
+        result.error ??
+          `We could not send your message. Please try again or call ${siteConfig.contact.phone}.`,
+      );
       return;
     }
 
@@ -74,7 +83,7 @@ export function ContactForm() {
 
   if (submittedId) {
     return (
-      <div className="rounded-lg border border-success bg-accent p-6">
+      <div className="rounded-lg border border-success bg-accent p-6" role="status">
         <div className="flex items-start gap-4">
           <svg
             className="h-8 w-8 text-success"
@@ -111,49 +120,65 @@ export function ContactForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-4" noValidate>
-      <label className="grid gap-2">
+    <form onSubmit={handleSubmit} className="relative grid gap-4" noValidate>
+      <label className="grid gap-2" htmlFor="contact-name">
         <span className="text-sm font-normal text-foreground">Name</span>
         <Input
+          id="contact-name"
           value={form.name}
           onChange={(e) => setForm({ ...form, name: e.target.value })}
+          aria-invalid={Boolean(errors.name)}
           className="min-h-[48px] text-foreground"
         />
         {errors.name && (
-          <span className="text-sm font-normal text-warning">{errors.name}</span>
+          <span role="alert" className="text-sm font-normal text-warning">
+            {errors.name}
+          </span>
         )}
       </label>
 
-      <label className="grid gap-2">
+      <label className="grid gap-2" htmlFor="contact-email">
         <span className="text-sm font-normal text-foreground">Email</span>
         <Input
+          id="contact-email"
           type="email"
           value={form.email}
           onChange={(e) => setForm({ ...form, email: e.target.value })}
+          aria-invalid={Boolean(errors.email)}
           className="min-h-[48px] text-foreground"
         />
         {errors.email && (
-          <span className="text-sm font-normal text-warning">{errors.email}</span>
+          <span role="alert" className="text-sm font-normal text-warning">
+            {errors.email}
+          </span>
         )}
       </label>
 
-      <label className="grid gap-2">
+      <label className="grid gap-2" htmlFor="contact-message">
         <span className="text-sm font-normal text-foreground">Message</span>
         <Textarea
+          id="contact-message"
           value={form.message}
           onChange={(e) => setForm({ ...form, message: e.target.value })}
+          aria-invalid={Boolean(errors.message)}
           className="min-h-[160px] text-foreground"
         />
         {errors.message && (
-          <span className="text-sm font-normal text-warning">
+          <span role="alert" className="text-sm font-normal text-warning">
             {errors.message}
           </span>
         )}
       </label>
 
-      {submitError && (
-        <p className="text-sm font-normal text-warning">{submitError}</p>
-      )}
+      <HoneypotField value={companyWebsite} onChange={setCompanyWebsite} />
+
+      <FormValidationStatus
+        errors={[errors.name, errors.email, errors.message]}
+      />
+
+      {submitError && <FormSubmitError message={submitError} />}
+
+      <PrivacyPolicyLink />
 
       <Button
         type="submit"

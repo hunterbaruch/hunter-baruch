@@ -1,35 +1,63 @@
 import { NextResponse } from "next/server";
 import { persistLead } from "@/lib/persistLead";
+import { leadSubmissionSchema, formatZodError } from "@/lib/leadSchema";
+import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
+import { siteConfig } from "@/lib/site";
 import type { LeadPayload } from "@/lib/submitLead";
 
-function isValidEmail(value: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+/**
+ * Lightweight operational visibility for lead failures.
+ * Vercel logs capture these console.error lines. For alerting beyond logs,
+ * wire Sentry (or similar) here — do not silently drop failed submissions.
+ * Example: Sentry.captureException(error, { tags: { route: "leads" } })
+ */
+function reportLeadFailure(
+  stage: "parse" | "validate" | "persist" | "email" | "rate_limit",
+  detail: string,
+  error?: unknown,
+) {
+  console.error("[leads][ops]", {
+    stage,
+    detail,
+    at: new Date().toISOString(),
+    error:
+      error instanceof Error
+        ? { name: error.name, message: error.message }
+        : error,
+  });
 }
 
-function formatLeadEmail(payload: LeadPayload, referenceId: string) {
-  const lines = [
-    `Reference: ${referenceId}`,
-    `Source: ${payload.source}`,
-    `Name: ${payload.name}`,
-    `Email: ${payload.email}`,
-  ];
-
-  if (payload.phone) lines.push(`Phone: ${payload.phone}`);
-  if (payload.topic) lines.push(`Topic: ${payload.topic}`);
-  if (payload.preferredCallbackMethod) {
-    lines.push(`Preferred callback: ${payload.preferredCallbackMethod}`);
-  }
-
-  lines.push("", "Message:", payload.message);
-
-  if (payload.quoteSummary) {
-    lines.push("", payload.quoteSummary);
-  }
-
-  return lines.join("\n");
+/**
+ * Notification email — intentionally minimal.
+ * Do NOT include health answers, phone, full message, or quote details.
+ * Full details are available in the authenticated admin dashboard.
+ */
+function formatLeadNotificationEmail(params: {
+  name: string;
+  referenceId: string;
+  leadId: string;
+  createdAt: Date;
+}) {
+  const dashboardUrl = `${siteConfig.url}/admin/leads/${params.leadId}`;
+  return [
+    `New lead submitted — ${params.name}, ${params.createdAt.toISOString()}`,
+    "",
+    `Reference: ${params.referenceId}`,
+    `View full details (sign-in required): ${dashboardUrl}`,
+    "",
+    "This notification intentionally omits health answers and full submission details.",
+  ].join("\n");
 }
 
-async function sendLeadEmail(payload: LeadPayload, referenceId: string) {
+async function sendLeadEmail(params: {
+  name: string;
+  email: string;
+  referenceId: string;
+  leadId: string;
+  source: string;
+  topic?: string | null;
+  createdAt: Date;
+}) {
   const apiKey = process.env.RESEND_API_KEY;
   const toEmail = process.env.LEAD_NOTIFICATION_EMAIL;
   const fromEmail = process.env.LEAD_FROM_EMAIL;
@@ -41,7 +69,7 @@ async function sendLeadEmail(payload: LeadPayload, referenceId: string) {
     return false;
   }
 
-  const subjectTopic = payload.topic ?? "General inquiry";
+  const subjectTopic = params.topic ?? "General inquiry";
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -51,9 +79,14 @@ async function sendLeadEmail(payload: LeadPayload, referenceId: string) {
     body: JSON.stringify({
       from: fromEmail,
       to: [toEmail],
-      reply_to: payload.email,
-      subject: `New ${payload.source} lead — ${subjectTopic} (${referenceId})`,
-      text: formatLeadEmail(payload, referenceId),
+      reply_to: params.email,
+      subject: `New ${params.source} lead — ${subjectTopic} (${params.referenceId})`,
+      text: formatLeadNotificationEmail({
+        name: params.name,
+        referenceId: params.referenceId,
+        leadId: params.leadId,
+        createdAt: params.createdAt,
+      }),
     }),
   });
 
@@ -67,10 +100,29 @@ async function sendLeadEmail(payload: LeadPayload, referenceId: string) {
 }
 
 export async function POST(request: Request) {
-  let payload: LeadPayload;
+  const ip = getClientIp(request);
+  const rate = checkRateLimit(ip);
+
+  if (!rate.allowed) {
+    reportLeadFailure("rate_limit", `IP limited: ${ip}`);
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "Too many submissions. Please try again in a few minutes.",
+      },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(rate.retryAfterSeconds),
+        },
+      },
+    );
+  }
+
+  let body: unknown;
 
   try {
-    payload = (await request.json()) as LeadPayload;
+    body = await request.json();
   } catch {
     return NextResponse.json(
       { ok: false, error: "Invalid request body." },
@@ -78,66 +130,82 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!payload.name?.trim() || payload.name.trim().length < 2) {
-    return NextResponse.json(
-      { ok: false, error: "Enter a valid name." },
-      { status: 400 },
-    );
+  // Honeypot: reject silently-looking success if filled (don't tip off bots).
+  const honeypot =
+    typeof body === "object" &&
+    body !== null &&
+    "companyWebsite" in body &&
+    typeof (body as { companyWebsite?: unknown }).companyWebsite === "string"
+      ? (body as { companyWebsite: string }).companyWebsite
+      : "";
+
+  if (honeypot.trim().length > 0) {
+    return NextResponse.json({ ok: true, referenceId: "OK" });
   }
 
-  if (!payload.email?.trim() || !isValidEmail(payload.email)) {
-    return NextResponse.json(
-      { ok: false, error: "Enter a valid email." },
-      { status: 400 },
-    );
-  }
+  const parsed = leadSubmissionSchema.safeParse(body);
 
-  if (!payload.message?.trim() || payload.message.trim().length < 10) {
+  if (!parsed.success) {
     return NextResponse.json(
-      { ok: false, error: "Add a few details so we can help." },
-      { status: 400 },
-    );
-  }
-
-  if (payload.source === "schedule" && !payload.topic?.trim()) {
-    return NextResponse.json(
-      { ok: false, error: "Select a consultation topic." },
+      { ok: false, error: formatZodError(parsed.error) },
       { status: 400 },
     );
   }
 
   if (!process.env.DATABASE_URL) {
-    console.error("[leads] DATABASE_URL is not configured.");
+    reportLeadFailure("persist", "DATABASE_URL is not configured");
     return NextResponse.json(
       {
         ok: false,
-        error:
-          "We could not save your request right now. Please call or email us directly.",
+        error: `We could not save your request right now. Please try again or call ${siteConfig.contact.phone}.`,
       },
       { status: 503 },
     );
   }
+
+  const payload: LeadPayload = {
+    source: parsed.data.source,
+    name: parsed.data.name,
+    email: parsed.data.email,
+    phone: parsed.data.phone || undefined,
+    topic: parsed.data.topic || undefined,
+    preferredCallbackMethod: parsed.data.preferredCallbackMethod || undefined,
+    message: parsed.data.message,
+    quoteSummary: parsed.data.quoteSummary ?? null,
+    healthClass: parsed.data.healthClass ?? null,
+    tcpaConsent: parsed.data.tcpaConsent,
+  };
 
   let lead;
 
   try {
     lead = await persistLead(payload);
   } catch (error) {
-    console.error("[leads] Database error:", error);
+    reportLeadFailure("persist", "Database write failed", error);
     return NextResponse.json(
       {
         ok: false,
-        error:
-          "We could not save your request right now. Please call or email us directly.",
+        error: `We could not save your request right now. Please try again or call ${siteConfig.contact.phone}.`,
       },
       { status: 503 },
     );
   }
 
-  const emailSent = await sendLeadEmail(payload, lead.referenceId);
+  const emailSent = await sendLeadEmail({
+    name: payload.name,
+    email: payload.email,
+    referenceId: lead.referenceId,
+    leadId: lead.id,
+    source: payload.source,
+    topic: payload.topic,
+    createdAt: lead.createdAt,
+  });
 
   if (!emailSent) {
-    console.warn(`[leads] Lead ${lead.referenceId} saved without email delivery.`);
+    reportLeadFailure(
+      "email",
+      `Lead ${lead.referenceId} saved without email delivery`,
+    );
   }
 
   return NextResponse.json({ ok: true, referenceId: lead.referenceId });
