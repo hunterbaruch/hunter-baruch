@@ -8,9 +8,16 @@ import { advocacyPoints, coreServices } from "@/lib/site";
 const advocacyService = coreServices[2];
 
 export const metadata: Metadata = {
-  title: "Patient Advocacy",
+  title: "Patient Advocacy Atlanta",
   description:
-    "Medical bill review, insurance navigation, and care coordination support from Hunter Baruch Financial.",
+    "Patient advocacy in Atlanta — medical bill review, insurance navigation, and care coordination. Most advocacy services can be covered by insurance.",
+  alternates: { canonical: "/patient-advocacy" },
+  openGraph: {
+    title: "Patient Advocacy Atlanta | Hunter Baruch Financial",
+    description:
+      "Support with medical bills, insurance questions, and care pathways so your family is not navigating complex healthcare alone.",
+    url: "/patient-advocacy",
+  },
 };
 
 export default function PatientAdvocacyPage() {

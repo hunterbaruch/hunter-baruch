@@ -6,7 +6,14 @@ import { siteConfig } from "@/lib/site";
 export const metadata: Metadata = {
   title: "Schedule a Consultation",
   description:
-    "Book a free consultation with Hunter Baruch Financial to review your life insurance, Medicare, or advocacy options.",
+    "Book a free consultation with a Georgia-licensed producer in Atlanta. Review life insurance, Medicare, or advocacy options — no obligation.",
+  alternates: { canonical: "/schedule-consultation" },
+  openGraph: {
+    title: "Schedule a Consultation | Hunter Baruch Financial",
+    description:
+      "Pick a time to speak with an advisor about life insurance, Medicare, or patient advocacy. Clear next steps, no pressure.",
+    url: "/schedule-consultation",
+  },
 };
 
 export default function ScheduleConsultationPage() {

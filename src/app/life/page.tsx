@@ -8,9 +8,16 @@ import { coreServices, lifeServices } from "@/lib/site";
 const lifeService = coreServices[0];
 
 export const metadata: Metadata = {
-  title: "Life",
+  title: "Life Insurance Atlanta GA",
   description:
-    "Life insurance, income protection, retirement, and legacy planning from Hunter Baruch Financial.",
+    "Georgia life insurance guidance in Atlanta — term and permanent options, multi-carrier comparison, and clear coverage recommendations from a licensed producer.",
+  alternates: { canonical: "/life" },
+  openGraph: {
+    title: "Life Insurance Atlanta GA | Hunter Baruch Financial",
+    description:
+      "Compare term and permanent life insurance options with a Georgia-licensed producer. Independent carrier review and plain-language guidance.",
+    url: "/life",
+  },
 };
 
 export default function LifePage() {

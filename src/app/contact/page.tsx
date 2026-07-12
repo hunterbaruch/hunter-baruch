@@ -4,9 +4,16 @@ import { PageHero } from "@/components/PageHero";
 import { siteConfig } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "Contact",
+  title: "Contact Atlanta Insurance Agency",
   description:
-    "Get in touch with Hunter Baruch Financial to schedule a consultation for financial planning or patient advocacy.",
+    "Contact Hunter Baruch Financial in Atlanta — call (943) 230-2740 or visit 8735 Dunwoody Place, Suite R. Life insurance, Medicare, and advocacy help.",
+  alternates: { canonical: "/contact" },
+  openGraph: {
+    title: "Contact Hunter Baruch Financial | Atlanta, GA",
+    description:
+      "Reach our Atlanta office for life insurance, Medicare, or patient advocacy. We typically respond within one business day.",
+    url: "/contact",
+  },
 };
 
 export default function ContactPage() {

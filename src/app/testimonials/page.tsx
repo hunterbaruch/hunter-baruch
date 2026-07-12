@@ -4,9 +4,10 @@ import { PageHero } from "@/components/PageHero";
 import { TestimonialsVideoGridCarousel } from "@/components/TestimonialsVideoGridCarousel";
 
 export const metadata: Metadata = {
-  title: "Testimonials",
+  title: "Client Testimonials",
   description:
-    "Client stories and testimonials for Hunter Baruch Financial planning and patient advocacy services.",
+    "Client stories from families who worked with Hunter Baruch Financial on life insurance, Medicare, and patient advocacy in Georgia.",
+  alternates: { canonical: "/testimonials" },
 };
 
 export default function TestimonialsPage() {

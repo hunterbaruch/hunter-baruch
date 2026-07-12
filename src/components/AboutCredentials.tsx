@@ -92,8 +92,8 @@ export function AboutCredentials() {
               Advisor credibility
             </h3>
             <p className="mt-3 text-base font-light leading-7 text-gray-700">
-              Personalized guidance, plan comparisons, and support after
-              enrollment are central to our service model.
+              Personalized guidance, plan comparisons, and ongoing support are
+              central to our service model.
             </p>
           </CardContent>
         </Card>

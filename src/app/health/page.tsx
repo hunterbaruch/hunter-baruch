@@ -8,9 +8,16 @@ import { coreServices, healthServices } from "@/lib/site";
 const healthService = coreServices[1];
 
 export const metadata: Metadata = {
-  title: "Health",
+  title: "Medicare & Health Coverage Georgia",
   description:
-    "Health coverage review, Medicare guidance, long-term care planning, and benefits optimization from Hunter Baruch Financial.",
+    "Medicare and health coverage guidance in Georgia — plan fit, enrollment windows, supplements, and benefits review with a licensed Atlanta producer.",
+  alternates: { canonical: "/health" },
+  openGraph: {
+    title: "Medicare & Health Coverage Georgia | Hunter Baruch Financial",
+    description:
+      "Understand Medicare and health plan options without pressure. Plan comparisons and enrollment guidance from a Georgia-licensed producer.",
+    url: "/health",
+  },
 };
 
 export default function HealthPage() {

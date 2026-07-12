@@ -1,15 +1,43 @@
 export const siteConfig = {
   name: "Hunter Baruch Financial",
   tagline: "Financial clarity when it matters most",
+  /**
+   * Default meta description (≤ ~160 chars preferred). Used site-wide + OG.
+   */
   description:
-    "Personalized financial planning and patient advocacy services to help you navigate complex decisions with confidence.",
+    "Georgia-licensed insurance agency in Atlanta offering life insurance, Medicare guidance, and patient advocacy. Independent multi-carrier comparison and clear next steps.",
   url: "https://hunterbaruchfinancial.com",
   logo: "/hb-logo-header.png",
   contact: {
     phone: "(943) 230-2740",
     email: "hello@hunterbaruchfinancial.com",
     address: "8735 Dunwoody Place, Suite R\nAtlanta, GA 30350",
+    /** Single-line form for schema.org / maps. */
+    addressLocality: "Atlanta",
+    addressRegion: "GA",
+    postalCode: "30350",
+    streetAddress: "8735 Dunwoody Place, Suite R",
     hours: "Monday to Friday, 8:30 AM to 5:30 PM",
+  },
+  /**
+   * Search / social SEO defaults. Keep natural; avoid keyword stuffing.
+   */
+  seo: {
+    homeTitle:
+      "Hunter Baruch Financial | Life Insurance, Medicare & Advocacy in Atlanta, GA",
+    homeDescription:
+      "Compare life insurance and Medicare options with a Georgia-licensed producer in Atlanta. Multi-carrier quotes, patient advocacy support, and no-pressure guidance.",
+    keywords: [
+      "life insurance Atlanta",
+      "Georgia life insurance agent",
+      "Medicare guidance Atlanta",
+      "Medicare Advantage Georgia",
+      "patient advocacy Atlanta",
+      "insurance broker Georgia",
+      "Hunter Baruch Financial",
+      "term life insurance quote Georgia",
+      "Dunwoody insurance agent",
+    ],
   },
   /**
    * Producer licensing — displayed site-wide in the footer (GA best practice).
@@ -229,7 +257,7 @@ export const faqs = [
     id: "faq-3",
     question: "Do I pay extra for advocacy?",
     answer:
-      "Advocacy support can vary by case and engagement type. We explain scope and any fees clearly before moving forward.",
+      "Most advocacy services can be covered by insurance. Scope and any remaining fees vary by case and engagement type — we explain both clearly before moving forward.",
   },
   {
     id: "faq-4",
