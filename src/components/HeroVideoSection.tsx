@@ -2,35 +2,74 @@
 
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { trackEvent } from "@/lib/utils";
 
+gsap.registerPlugin(ScrollTrigger);
+
 export function HeroVideoSection() {
+  const sectionRef = useRef<HTMLElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
-    if (!contentRef.current) return;
+    if (!contentRef.current || !sectionRef.current || !videoRef.current) return;
 
     const prefersReducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
     if (prefersReducedMotion) return;
 
-    const nodes = contentRef.current.querySelectorAll("[data-hero-item]");
-    gsap.fromTo(
+    const section = sectionRef.current;
+    const video = videoRef.current;
+    const content = contentRef.current;
+    const nodes = content.querySelectorAll("[data-hero-item]");
+
+    const intro = gsap.fromTo(
       nodes,
       { opacity: 0, y: 24 },
       { opacity: 1, y: 0, duration: 0.7, stagger: 0.12, ease: "power2.out" },
     );
 
-    const handleScroll = () => {
-      if (!videoRef.current) return;
-      const shift = Math.min(window.scrollY * 0.08, 28);
-      videoRef.current.style.transform = `translateY(${shift}px) scale(1.06)`;
-    };
+    // Start slightly zoomed so edges never show as the parallax moves.
+    gsap.set(video, {
+      scale: 1.08,
+      yPercent: 0,
+      transformOrigin: "center center",
+      force3D: true,
+    });
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    const parallax = gsap.to(video, {
+      scale: 1.32,
+      yPercent: 12,
+      ease: "none",
+      scrollTrigger: {
+        trigger: section,
+        start: "top top",
+        end: "bottom top",
+        scrub: 0.45,
+      },
+    });
+
+    const contentParallax = gsap.to(content, {
+      y: -48,
+      opacity: 0.35,
+      ease: "none",
+      scrollTrigger: {
+        trigger: section,
+        start: "top top",
+        end: "bottom top",
+        scrub: 0.45,
+      },
+    });
+
+    return () => {
+      intro.kill();
+      parallax.scrollTrigger?.kill();
+      parallax.kill();
+      contentParallax.scrollTrigger?.kill();
+      contentParallax.kill();
+    };
   }, []);
 
   const handleQuoteClick = () => {
@@ -41,6 +80,7 @@ export function HeroVideoSection() {
 
   return (
     <section
+      ref={sectionRef}
       id="top"
       className="relative flex min-h-[min(62svh,560px)] items-end overflow-hidden bg-tertiary"
     >
@@ -49,7 +89,7 @@ export function HeroVideoSection() {
         aria-label="Advisor meeting family at home"
         src="/ai_1.mp4"
         poster="/ai_1-poster.png"
-        className="absolute inset-0 h-full w-full object-cover"
+        className="absolute inset-0 h-full w-full object-cover will-change-transform"
         autoPlay
         loop
         muted
@@ -109,7 +149,7 @@ export function HeroVideoSection() {
         `}</style>
       </div>
       <div className="container-shell relative z-10 w-full px-8 pb-8 pt-16 lg:px-12 lg:pb-10">
-        <div ref={contentRef} className="max-w-2xl text-left">
+        <div ref={contentRef} className="max-w-2xl text-left will-change-transform">
           <p
             data-hero-item
             className="mb-3 text-sm font-light uppercase tracking-[0.24em] text-gray-100"
