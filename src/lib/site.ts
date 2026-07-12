@@ -6,36 +6,46 @@ export const siteConfig = {
   url: "https://hunterbaruchfinancial.com",
   logo: "/hb-logo-header.png",
   contact: {
-    phone: "(555) 123-4567",
+    phone: "(943) 230-2740",
     email: "hello@hunterbaruchfinancial.com",
-    address: "123 Financial District, Suite 400\nNew York, NY 10001",
+    address: "8735 Dunwoody Place, Suite R\nAtlanta, GA 30350",
     hours: "Monday to Friday, 8:30 AM to 5:30 PM",
   },
   /**
-   * COMPLIANCE: Hunter must supply the real Georgia insurance license number
-   * and/or National Producer Number (NPN) before launch. Placeholders must not
-   * ship as final public copy.
+   * Producer licensing — displayed site-wide in the footer (GA best practice).
+   * Verify active status in Sircon / NIPR and Georgia OCI producer lookup.
    */
   licensing: {
     producerName: "Hunter Baruch Financial",
-    georgiaLicenseNumber: "[GEORGIA LICENSE # — PENDING FROM HUNTER]",
-    npn: "[NPN — PENDING FROM HUNTER]",
+    licensedIn: "Georgia",
+    georgiaLicenseNumber: "3288180",
+    npn: "19685355",
+    /** Errors & omissions / professional liability (Markel). */
+    eo: {
+      carrier: "Markel American Insurance Co.",
+      policyNumber: "MKLM7PLCA00129",
+    },
   },
   /**
-   * COMPLIANCE ASSUMPTION: Standard non-affiliation line for Medicare /
-   * health-adjacent insurance marketing. Confirm with counsel whether this
-   * wording should be adjusted for Hunter's specific product lines.
+   * Medicare / government non-affiliation. Confirm with counsel for product lines.
    */
   governmentDisclaimer:
-    "This website is not connected with or endorsed by the United States government, the federal Medicare program, or any state insurance department.",
+    "This website is not connected with or endorsed by the United States government, the federal Medicare program, the Centers for Medicare & Medicaid Services (CMS), or any state insurance department, including the Georgia Office of Commissioner of Insurance and Safety Fire.",
   /**
-   * Shown near quote estimator output. Confirm exact wording with compliance
-   * if carrier or E&O guidance requires different language.
+   * Shown near quote estimator output. Confirm if carriers require different wording.
    */
   estimateDisclaimer:
-    "This is an estimate only and not a final quote, offer of coverage, or guarantee of insurability. Actual rates are determined by the insurance carrier upon full underwriting.",
+    "This is an estimate only and not a final quote, offer of coverage, binder, or guarantee of insurability. Actual rates, benefits, and eligibility are determined by the insurance carrier upon full underwriting and issuance of a policy. Product availability varies by state, carrier appointment, and individual circumstances.",
+  /**
+   * Primary site-wide insurance marketing disclaimer (footer).
+   */
   disclosure:
-    "Investment advisory services offered through Hunter Baruch Financial. This website is for informational purposes only and does not constitute financial, legal, or medical advice. Past performance is not indicative of future results.",
+    "Insurance products and services are offered through Hunter Baruch Financial, a Georgia-licensed insurance producer. This website is for general informational purposes only and does not constitute an offer of insurance, a contract of insurance, or legal, tax, financial, or medical advice. Nothing on this site guarantees coverage, premiums, benefits, or claim outcomes. Coverage is subject to underwriting approval and the terms, conditions, limitations, and exclusions of the issuing insurance company's policy. Carrier appointments, product availability, and plan options vary and may change. For personalized guidance, contact us or request a consultation.",
+  /**
+   * E&O / professional liability disclosure for footer.
+   */
+  eoDisclaimer:
+    "Professional liability (errors and omissions) insurance is maintained through Markel American Insurance Co. (Policy No. MKLM7PLCA00129). E&O coverage does not guarantee results for any client matter and is not a substitute for careful product review or underwriting.",
   legalLinks: [
     { href: "/privacy-policy", label: "Privacy Policy" },
     { href: "/terms-of-service", label: "Terms of Service" },

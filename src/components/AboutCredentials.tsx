@@ -24,6 +24,32 @@ export function AboutCredentials() {
             senior and family-support organizations.
           </p>
 
+          <div className="mt-8 rounded-lg border border-gray-200 bg-gray-50 p-6">
+            <p className="text-sm font-light uppercase tracking-[0.2em] text-gray-600">
+              About our licenses
+            </p>
+            <p className="mt-3 text-base font-medium text-gray-900">
+              {siteConfig.licensing.producerName}
+            </p>
+            <ul className="mt-3 space-y-1.5 text-base font-light leading-7 text-gray-700">
+              <li>Licensed in {siteConfig.licensing.licensedIn}</li>
+              <li>
+                Georgia License No.{" "}
+                {siteConfig.licensing.georgiaLicenseNumber}
+              </li>
+              <li>National Producer Number (NPN): {siteConfig.licensing.npn}</li>
+              <li>
+                Professional liability (E&amp;O):{" "}
+                {siteConfig.licensing.eo.carrier}
+              </li>
+            </ul>
+            <p className="mt-3 text-sm font-light leading-6 text-gray-600">
+              License status may be verified through the Georgia Office of
+              Commissioner of Insurance producer lookup or via NIPR using the
+              NPN listed above.
+            </p>
+          </div>
+
           <div className="mt-8 grid gap-4 sm:grid-cols-3">
             {aboutStats.map((stat) => (
               <div
@@ -47,7 +73,9 @@ export function AboutCredentials() {
             <p className="mt-3 text-base font-light leading-7 text-gray-700">
               We provide guidance based on available appointments and plan
               information. Benefits, premiums, and eligibility vary by state,
-              carrier, and applicant profile.
+              carrier, and applicant profile. We do not guarantee coverage,
+              rates, or claim outcomes. Product availability depends on active
+              carrier appointments and underwriting.
             </p>
           </div>
         </div>

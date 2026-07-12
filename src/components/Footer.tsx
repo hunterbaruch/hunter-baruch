@@ -2,6 +2,9 @@ import Link from "next/link";
 import { navLinks, siteConfig } from "@/lib/site";
 
 export function Footer() {
+  const { licensing, contact } = siteConfig;
+  const phoneDigits = contact.phone.replace(/\D/g, "");
+
   return (
     <footer className="mt-auto border-t border-border bg-primary text-white">
       <div className="mx-auto grid max-w-6xl gap-10 px-6 py-12 md:grid-cols-3">
@@ -12,14 +15,27 @@ export function Footer() {
             className="h-14 w-auto brightness-0 invert"
           />
           <p className="mt-3 text-sm text-white/85">{siteConfig.tagline}</p>
-          <p className="mt-4 text-sm leading-6 text-white/85">
-            {siteConfig.licensing.producerName}
-            <br />
-            {/* COMPLIANCE: replace pending placeholders with real license / NPN */}
-            Georgia License: {siteConfig.licensing.georgiaLicenseNumber}
-            <br />
-            NPN: {siteConfig.licensing.npn}
-          </p>
+
+          {/* Producer license disclosure — prominent, verifiable */}
+          <div className="mt-5 rounded-lg border border-white/15 bg-white/5 px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/70">
+              Licensed producer
+            </p>
+            <p className="mt-2 text-sm font-medium text-white">
+              {licensing.producerName}
+            </p>
+            <p className="mt-1 text-sm leading-6 text-white/90">
+              Licensed in {licensing.licensedIn}
+              <br />
+              Georgia License No. {licensing.georgiaLicenseNumber}
+              <br />
+              National Producer Number (NPN): {licensing.npn}
+            </p>
+            <p className="mt-2 text-xs leading-5 text-white/70">
+              Verify licenses via the Georgia Office of Commissioner of Insurance
+              producer lookup or NIPR/Sircon using the NPN above.
+            </p>
+          </div>
         </div>
 
         <div>
@@ -47,33 +63,39 @@ export function Footer() {
           <ul className="mt-4 space-y-2 text-sm text-white/90">
             <li>
               <a
-                href={`tel:${siteConfig.contact.phone.replace(/\D/g, "")}`}
+                href={`tel:${phoneDigits}`}
                 className="hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
               >
-                {siteConfig.contact.phone}
+                {contact.phone}
               </a>
             </li>
             <li>
               <a
-                href={`mailto:${siteConfig.contact.email}`}
+                href={`mailto:${contact.email}`}
                 className="hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
               >
-                {siteConfig.contact.email}
+                {contact.email}
               </a>
             </li>
-            <li className="whitespace-pre-line">{siteConfig.contact.address}</li>
+            <li className="whitespace-pre-line">{contact.address}</li>
+            <li className="text-white/75">{contact.hours}</li>
           </ul>
         </div>
       </div>
 
+      {/* Compliance / disclaimer band — all pages via root layout */}
       <div className="border-t border-white/10 px-6 py-6">
-        <p className="mx-auto max-w-6xl text-xs leading-relaxed text-white/85">
-          {siteConfig.disclosure}
-        </p>
-        <p className="mx-auto mt-3 max-w-6xl text-xs leading-relaxed text-white/85">
-          {siteConfig.governmentDisclaimer}
-        </p>
-        <p className="mx-auto mt-4 max-w-6xl text-xs text-white/85">
+        <div className="mx-auto max-w-6xl space-y-3 text-xs leading-relaxed text-white/85">
+          <p>{siteConfig.disclosure}</p>
+          <p>{siteConfig.eoDisclaimer}</p>
+          <p>{siteConfig.governmentDisclaimer}</p>
+          <p>
+            Estimates and illustrations generated on this site are not final
+            quotes. {siteConfig.estimateDisclaimer}
+          </p>
+        </div>
+
+        <p className="mx-auto mt-5 max-w-6xl text-xs text-white/85">
           {siteConfig.legalLinks.map((link, index) => (
             <span key={link.href}>
               {index > 0 ? " · " : null}

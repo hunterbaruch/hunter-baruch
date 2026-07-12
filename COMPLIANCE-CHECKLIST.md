@@ -17,10 +17,12 @@ Jurisdiction: Georgia-licensed insurance producer (OCI). Federal: GLBA, TCPA, AD
   - ⏳ Formal written information security program remains a business/policy exercise
 - [x] TCPA consent for phone/text (checkbox + stored timestamp/text version)
 - [x] Producer license / NPN disclosure in footer (`siteConfig.licensing`)
-  - ⏳ Replace placeholders with real Georgia license # and/or NPN
+  - [x] Georgia License No. **3288180** and NPN **19685355** live in footer + About
   - ⏳ Confirm carrier appointment contracts require specific display format
-- [ ] E&O carrier requirements
-  - ⏳ Ask E&O carrier / appointed carriers for required disclaimers or lead-handling language
+  - ⏳ Re-verify active status in Sircon / NIPR / GA OCI lookup before launch and annually
+- [x] E&O carrier disclosure in footer (`siteConfig.eoDisclaimer` + `licensing.eo`)
+  - Markel American Insurance Co., Policy MKLM7PLCA00129
+  - ⏳ Confirm with Markel / appointed carriers whether policy number must (or must not) appear publicly and any required lead-handling language
 - [x] CCPA-style privacy rights clause in Privacy Policy
 - [x] Dedicated “Do Not Sell or Share My Personal Information” page + footer link (`/do-not-sell`)
   - ⏳ Confirm with counsel whether additional CA-specific notices are needed
@@ -37,7 +39,8 @@ Jurisdiction: Georgia-licensed insurance producer (OCI). Federal: GLBA, TCPA, AD
   - ⏳ Counsel review (Georgia governing law/venue)
 - [x] Cookie disclosure banner + privacy cookies section
 - [x] Clear “estimate only” disclaimer near quote tool output
-- [x] Contact / licensing info in footer (agency name, license, NPN placeholders)
+- [x] Contact / licensing info in footer (agency name, GA license, NPN, E&O)
+- [x] “About our licenses” block on homepage About section
 
 ## Technical / security
 
@@ -90,9 +93,10 @@ Jurisdiction: Georgia-licensed insurance producer (OCI). Federal: GLBA, TCPA, AD
 - [ ] Mobile test of quote estimator + schedule + contact forms
 - [ ] Confirm SSL/HTTPS on final production domain (not only `*.vercel.app`)
 - [ ] Set all production env vars on Vercel (`AUTH_SECRET`, `FIELD_ENCRYPTION_KEY`, DB, Resend, etc.)
-- [ ] Replace license/NPN placeholders with real values
-- [ ] Hunter (or compliance contact) reads Privacy Policy, Terms, TCPA consent, estimate disclaimer, gov disclaimer
-- [ ] E&O / carrier disclaimer check completed
+- [x] Replace license/NPN placeholders with real values (3288180 / 19685355)
+- [ ] Hunter (or compliance contact) reads Privacy Policy, Terms, TCPA consent, estimate disclaimer, gov disclaimer, E&O line
+- [ ] E&O / carrier disclaimer check completed (Markel + appointed carriers)
+- [ ] Confirm no product-specific annuity suitability page is required for lines currently marketed on site
 - [ ] Uptime monitor pointed at `/api/health`
 - [ ] Supabase backup/PITR confirmed
 - [ ] Axe + manual accessibility pass on estimator
