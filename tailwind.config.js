@@ -98,5 +98,7 @@ module.exports = {
       },
     },
   },
+  // Tailwind configs are CommonJS; require is the supported plugin load path.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- CJS config
   plugins: [require("tailwindcss-animate")],
 };

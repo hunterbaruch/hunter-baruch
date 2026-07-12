@@ -15,7 +15,9 @@
   --tertiary: hsl(210 56% 14%);
   --tertiary-foreground: hsl(0 0% 98%);
   --success: hsl(150 68% 32%);
-  --warning: hsl(38 92% 45%);
+  /* Darkened for WCAG AA contrast on light backgrounds (~4.5:1+ for body-size text) */
+  --warning: hsl(28 90% 32%);
+  --ring: hsl(158 88% 28%);
 }
 
 @theme inline {
@@ -35,6 +37,7 @@
   --color-tertiary-foreground: var(--tertiary-foreground);
   --color-success: var(--success);
   --color-warning: var(--warning);
+  --color-ring: var(--ring);
   --color-gray-50: hsl(210 20% 98%);
   --color-gray-100: hsl(210 18% 95%);
   --color-gray-200: hsl(210 16% 89%);
@@ -65,6 +68,24 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Visible keyboard focus for interactive controls (WCAG 2.1 AA) */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 
 @utility section-shell {

@@ -1,135 +1,265 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import {
+  calculatePremiumEstimate,
+  formatCoverage,
+  formatCurrency,
+  type HealthClass,
+  type TermLength,
+} from "@/lib/quoteEstimate";
+import {
+  buildQuoteSummary,
+  clearQuoteWizardSnapshot,
+  getQuoteWizardStorageRaw,
+  getServerQuoteWizardStorageRaw,
+  parseQuoteWizardStorageRaw,
+  subscribeQuoteWizardStorage,
+  topicFromCoverageType,
+  writeQuoteWizardSnapshot,
+  type CoverageType,
+  type QuoteWizardSnapshot,
+} from "@/lib/quoteWizardStorage";
+import { HoneypotField } from "@/components/HoneypotField";
+import { PrivacyPolicyLink } from "@/components/PrivacyPolicyLink";
+import { FormSubmitError, FormValidationStatus } from "@/components/FormFeedback";
+import { TcpaConsentCheckbox } from "@/components/TcpaConsentCheckbox";
+import { TurnstileWidget } from "@/components/TurnstileWidget";
+import { submitLead } from "@/lib/submitLead";
+import { siteConfig } from "@/lib/site";
+import { isTurnstileEnforcedOnClient } from "@/lib/turnstile";
 import { trackEvent } from "@/lib/utils";
 
-const quoteSchema = z.object({
-  coverageType: z.string().min(1, "Select a coverage type."),
-  ageRange: z.string().min(1, "Choose your age range."),
-  zipCode: z.string().min(5, "Enter a valid ZIP code."),
-  coverageGoals: z.string().min(10, "Share a short summary of what you need."),
-  fullName: z.string().min(2, "Enter your full name."),
-  email: z.string().email("Enter a valid email."),
-  phone: z.string().min(10, "Enter a valid phone number."),
-  preferredCallbackMethod: z.string().min(1, "Select a callback method."),
-});
+const LIFE_STEP_COUNT = 8;
 
-type QuoteFormValues = z.infer<typeof quoteSchema>;
-
-const defaultValues: QuoteFormValues = {
-  coverageType: "",
-  ageRange: "",
-  zipCode: "",
-  coverageGoals: "",
-  fullName: "",
-  email: "",
-  phone: "",
-  preferredCallbackMethod: "",
-};
-
-const steps = [
+const HEALTH_OPTIONS: {
+  value: HealthClass;
+  label: string;
+  description: string;
+}[] = [
+  { value: "excellent", label: "Excellent", description: "No major conditions" },
+  { value: "good", label: "Good", description: "Well-managed health" },
+  { value: "average", label: "Average", description: "Some health concerns" },
   {
-    title: "Coverage type",
-    fields: ["coverageType"] as Array<keyof QuoteFormValues>,
-  },
-  {
-    title: "Basic profile",
-    fields: ["ageRange", "zipCode", "coverageGoals"] as Array<
-      keyof QuoteFormValues
-    >,
-  },
-  {
-    title: "Contact details",
-    fields: ["fullName", "email", "phone", "preferredCallbackMethod"] as Array<
-      keyof QuoteFormValues
-    >,
+    value: "tobacco",
+    label: "Tobacco User",
+    description: "Uses tobacco/nicotine",
   },
 ];
 
+const WHAT_YOU_GET = [
+  "A broker-led review across available carriers and plan types",
+  "Plain-language guidance for life insurance and Medicare decisions",
+  "Advocacy support when care, billing, or enrollment feels unclear",
+  "A clear next step with no obligation to enroll",
+];
+
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
 export function QuoteWizard() {
+  const router = useRouter();
   const [step, setStep] = useState(0);
-  const [submittedId, setSubmittedId] = useState<string>("");
+  const storedRaw = useSyncExternalStore(
+    subscribeQuoteWizardStorage,
+    getQuoteWizardStorageRaw,
+    getServerQuoteWizardStorageRaw,
+  );
+  const state = useMemo(
+    () => parseQuoteWizardStorageRaw(storedRaw),
+    [storedRaw],
+  );
+  const setState = useCallback(
+    (
+      update:
+        | QuoteWizardSnapshot
+        | ((current: QuoteWizardSnapshot) => QuoteWizardSnapshot),
+    ) => {
+      const current = parseQuoteWizardStorageRaw(getQuoteWizardStorageRaw());
+      const next = typeof update === "function" ? update(current) : update;
+      writeQuoteWizardSnapshot(next);
+    },
+    [],
+  );
+  const [fieldErrors, setFieldErrors] = useState<
+    Partial<Record<keyof QuoteWizardSnapshot | "tcpaConsent", string>>
+  >({});
+  const [submittedId, setSubmittedId] = useState("");
   const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [companyWebsite, setCompanyWebsite] = useState("");
+  const [tcpaConsent, setTcpaConsent] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileReset, setTurnstileReset] = useState(0);
+  const turnstileRequired = isTurnstileEnforcedOnClient();
 
-  const form = useForm<QuoteFormValues>({
-    resolver: zodResolver(quoteSchema),
-    defaultValues,
-    mode: "onTouched",
-  });
+  const isLifeFlow = state.coverageType === "Life";
+  const showEstimate = isLifeFlow && !submittedId;
+  const totalSteps = isLifeFlow ? LIFE_STEP_COUNT : 1;
 
-  useEffect(() => {
-    const saved = window.localStorage.getItem("quote-wizard");
-    if (!saved) return;
-    try {
-      const parsed = JSON.parse(saved) as QuoteFormValues;
-      form.reset(parsed);
-    } catch {
-      window.localStorage.removeItem("quote-wizard");
-    }
-  }, [form]);
-
-  useEffect(() => {
-    const subscription = form.watch((value) => {
-      window.localStorage.setItem(
-        "quote-wizard",
-        JSON.stringify({ ...defaultValues, ...value }),
-      );
-    });
-    return () => subscription.unsubscribe();
-  }, [form]);
-
-  const progressValue = useMemo(
-    () => ((step + 1) / steps.length) * 100,
-    [step],
+  const estimate = useMemo(
+    () =>
+      calculatePremiumEstimate({
+        coverageAmount: state.coverageAmount,
+        termLength: state.termLength,
+        age: state.age,
+        gender: state.gender,
+        healthClass: state.healthClass,
+      }),
+    [state.coverageAmount, state.termLength, state.age, state.gender, state.healthClass],
   );
 
-  const nextStep = async () => {
-    const valid = await form.trigger(steps[step].fields);
-    if (!valid) {
+  const progressValue = submittedId
+    ? 100
+    : ((step + 1) / totalSteps) * 100;
+
+  const updateState = <K extends keyof QuoteWizardSnapshot>(
+    key: K,
+    value: QuoteWizardSnapshot[K],
+  ) => {
+    setState((current) => ({ ...current, [key]: value }));
+    setFieldErrors((current) => {
+      if (!current[key]) return current;
+      const next = { ...current };
+      delete next[key];
+      return next;
+    });
+  };
+
+  const validateStep = (): boolean => {
+    const errors: Partial<
+      Record<keyof QuoteWizardSnapshot | "tcpaConsent", string>
+    > = {};
+
+    if (step === 0 && !state.coverageType) {
+      errors.coverageType = "Select a coverage type.";
+    }
+
+    if (isLifeFlow && step === 6) {
+      if (state.zipCode.trim().length < 5) {
+        errors.zipCode = "Enter a valid ZIP code.";
+      }
+      if (state.fullName.trim().length < 2) {
+        errors.fullName = "Enter the name for this coverage.";
+      }
+    }
+
+    if (isLifeFlow && step === 7) {
+      if (!isValidEmail(state.email)) {
+        errors.email = "Enter a valid email.";
+      }
+      if (state.phone.replace(/\D/g, "").length < 10) {
+        errors.phone = "Enter a valid phone number.";
+      }
+      if (!state.preferredCallbackMethod) {
+        errors.preferredCallbackMethod = "Select a callback method.";
+      }
+      if (state.phone.replace(/\D/g, "").length >= 10 && !tcpaConsent) {
+        errors.tcpaConsent =
+          "Please confirm consent to be contacted by phone or text.";
+      }
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const nextStep = () => {
+    if (!validateStep()) {
       trackEvent("quote_step_invalid", { step: step + 1 });
       return;
     }
-    trackEvent("quote_step_complete", { step: step + 1 });
-    setStep((current) => Math.min(current + 1, steps.length - 1));
+
+    if (step === 0 && (state.coverageType === "Medicare" || state.coverageType === "Advocacy")) {
+      trackEvent("quote_schedule_redirect", { coverageType: state.coverageType });
+      router.push("/schedule-consultation");
+      return;
+    }
+
+    trackEvent("quote_step_complete", { step: step + 1, coverageType: state.coverageType });
+    setStep((current) => Math.min(current + 1, LIFE_STEP_COUNT - 1));
   };
 
-  const prevStep = () => setStep((current) => Math.max(current - 1, 0));
+  const prevStep = () => {
+    setFieldErrors({});
+    setStep((current) => Math.max(current - 1, 0));
+  };
 
-  const onSubmit = form.handleSubmit(async (values) => {
-    setIsPending(true);
-    setError(null);
-    try {
-      // Lightweight fallback: pretend to submit and return a random ID
-      await new Promise((r) => setTimeout(r, 700));
-      const id = Math.random().toString(36).slice(2, 9).toUpperCase();
-      setSubmittedId(id);
-      window.localStorage.removeItem("quote-wizard");
-      trackEvent("quote_submitted", { coverageType: values.coverageType });
-    } catch (e) {
-      setError("submit_failed");
-    } finally {
-      setIsPending(false);
+  const handleSubmit = async () => {
+    if (!validateStep()) return;
+
+    if (turnstileRequired && !turnstileToken) {
+      setSubmitError("Please complete the security check and try again.");
+      return;
     }
-  });
+
+    setIsPending(true);
+    setSubmitError("");
+
+    const quoteSummary = buildQuoteSummary(state);
+    const topic = topicFromCoverageType(state.coverageType);
+
+    const result = await submitLead({
+      source: "quote_wizard",
+      name: state.fullName.trim(),
+      email: state.email.trim(),
+      phone: state.phone.trim(),
+      topic: topic || "Life Insurance",
+      preferredCallbackMethod: state.preferredCallbackMethod,
+      message: [
+        "Submitted via homepage quote wizard.",
+        quoteSummary,
+        state.zipCode.trim() ? `ZIP: ${state.zipCode.trim()}` : null,
+      ]
+        .filter(Boolean)
+        .join("\n\n"),
+      quoteSummary,
+      healthClass: state.healthClass,
+      companyWebsite,
+      tcpaConsent,
+      turnstileToken: turnstileToken ?? undefined,
+    });
+
+    setIsPending(false);
+
+    if (!result.ok) {
+      setTurnstileToken(null);
+      setTurnstileReset((value) => value + 1);
+      setSubmitError(
+        result.error ??
+          `We could not submit your request. Please try again or call ${siteConfig.contact.phone}.`,
+      );
+      return;
+    }
+
+    setSubmittedId(result.referenceId ?? "");
+    clearQuoteWizardSnapshot();
+    trackEvent("quote_submitted", {
+      coverageType: state.coverageType,
+      coverageAmount: state.coverageAmount,
+      termLength: state.termLength,
+    });
+  };
+
+  const isLastLifeStep = isLifeFlow && step === LIFE_STEP_COUNT - 1;
 
   return (
     <section id="pricing" className="section-shell bg-gradient-soft">
-      <div className="container-shell grid gap-6 lg:grid-cols-[1.35fr_0.95fr]">
+      <div className="container-shell">
+        <div className="grid gap-6 lg:grid-cols-[1.35fr_0.95fr] lg:items-start">
         <Card className="border border-gray-200 bg-card">
           <CardHeader className="space-y-3 p-6">
             <div className="flex items-center justify-between gap-4">
@@ -142,176 +272,564 @@ export function QuoteWizard() {
                   patient advocacy support.
                 </CardDescription>
               </div>
-              <div className="rounded-full border border-gray-200 bg-gray-50 px-4 py-2">
-                <span className="text-sm font-normal text-foreground">
-                  Step {submittedId ? 3 : step + 1} of 3
-                </span>
-              </div>
+              {!submittedId && (
+                <div className="rounded-full border border-gray-200 bg-gray-50 px-4 py-2">
+                  <span className="text-sm font-normal text-foreground">
+                    Step {step + 1} of {totalSteps}
+                  </span>
+                </div>
+              )}
             </div>
-            <Progress value={submittedId ? 100 : progressValue} className="h-3" />
+            <Progress value={progressValue} className="h-3" />
           </CardHeader>
 
           <CardContent className="p-6 pt-0">
             {submittedId ? (
               <div className="rounded-lg border border-success bg-muted p-6">
                 <div className="flex items-start gap-4">
-                  <svg className="h-8 w-8 text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4"/></svg>
+                  <svg
+                    className="h-8 w-8 text-success"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M9 12l2 2 4-4"
+                    />
+                  </svg>
                   <div>
-                    <h3 className="text-xl font-medium text-gray-900">Your request has been received</h3>
+                    <h3 className="text-xl font-medium text-gray-900">
+                      Your estimate request has been received
+                    </h3>
                     <p className="mt-2 text-base font-light leading-7 text-gray-700">
-                      We will review your information and follow up based on
-                      your preferred contact method. Reference ID: <span className="font-mono text-sm text-foreground">{submittedId}</span>
+                      We&apos;ll follow up with personalized options based on
+                      your answers. Reference ID:{" "}
+                      <span className="font-mono text-sm text-foreground">
+                        {submittedId}
+                      </span>
                     </p>
+                    <Link
+                      href="/schedule-consultation"
+                      className="mt-6 inline-flex min-h-[48px] items-center justify-center rounded-xl bg-primary px-6 text-sm font-semibold text-primary-foreground transition-colors hover:bg-secondary"
+                    >
+                      Schedule a Free Consultation
+                    </Link>
                   </div>
                 </div>
               </div>
             ) : (
-              <form onSubmit={onSubmit} className="space-y-6">
-                {step === 0 && (
-                  <div className="grid gap-4">
-                    <label className="grid gap-2">
-                      <span className="text-sm font-normal text-foreground">Coverage type</span>
-                      <select
-                        {...form.register("coverageType")}
-                        className="min-h-[48px] rounded-lg border border-input bg-card px-4 py-3 text-base font-light text-foreground"
-                      >
-                        <option value="">Select one</option>
-                        <option value="Life">Life Insurance</option>
-                        <option value="Medicare">Medicare Guidance</option>
-                        <option value="Advocacy">Advocacy consult</option>
-                      </select>
-                      {form.formState.errors.coverageType && (
-                        <span className="text-sm font-normal text-warning">{form.formState.errors.coverageType.message}</span>
+              <div className="space-y-4">
+                <div>
+                  {step === 0 && (
+                    <div className="grid gap-4">
+                      <label className="grid gap-2">
+                        <span className="text-sm font-normal text-foreground">
+                          Coverage type
+                        </span>
+                        <select
+                          value={state.coverageType}
+                          onChange={(event) =>
+                            updateState(
+                              "coverageType",
+                              event.target.value as CoverageType,
+                            )
+                          }
+                          className="min-h-[48px] rounded-lg border border-input bg-card px-4 py-3 text-base font-light text-foreground"
+                        >
+                          <option value="">Select one</option>
+                          <option value="Life">Life Insurance</option>
+                          <option value="Medicare">Medicare Guidance</option>
+                          <option value="Advocacy">Advocacy consult</option>
+                        </select>
+                        {fieldErrors.coverageType && (
+                          <span className="text-sm font-normal text-warning">
+                            {fieldErrors.coverageType}
+                          </span>
+                        )}
+                      </label>
+                      {state.coverageType === "Medicare" && (
+                        <p className="text-sm font-light leading-6 text-gray-600">
+                          Medicare guidance is best started with a one-on-one
+                          consultation. Continue to schedule yours.
+                        </p>
                       )}
-                    </label>
-                  </div>
-                )}
-
-                {step === 1 && (
-                  <div className="grid gap-4">
-                    <label className="grid gap-2">
-                      <span className="text-sm font-normal text-foreground">Age range</span>
-                      <select
-                        {...form.register("ageRange")}
-                        className="min-h-[48px] rounded-lg border border-input bg-card px-4 py-3 text-base font-light text-foreground"
-                      >
-                        <option value="">Select age range</option>
-                        <option value="Under 40">Under 40</option>
-                        <option value="40-54">40-54</option>
-                        <option value="55-64">55-64</option>
-                        <option value="65+">65+</option>
-                      </select>
-                      {form.formState.errors.ageRange && (
-                        <span className="text-sm font-normal text-warning">{form.formState.errors.ageRange.message}</span>
+                      {state.coverageType === "Advocacy" && (
+                        <p className="text-sm font-light leading-6 text-gray-600">
+                          Advocacy support begins with a personal consultation.
+                          Continue to schedule yours.
+                        </p>
                       )}
-                    </label>
-                    <label className="grid gap-2">
-                      <span className="text-sm font-normal text-foreground">ZIP code</span>
-                      <Input {...form.register("zipCode")} inputMode="numeric" className="min-h-[48px] text-foreground" />
-                      {form.formState.errors.zipCode && (
-                        <span className="text-sm font-normal text-warning">{form.formState.errors.zipCode.message}</span>
-                      )}
-                    </label>
-                    <label className="grid gap-2">
-                      <span className="text-sm font-normal text-foreground">Coverage goals</span>
-                      <Textarea {...form.register("coverageGoals")} className="min-h-[140px] text-foreground" />
-                      {form.formState.errors.coverageGoals && (
-                        <span className="text-sm font-normal text-warning">{form.formState.errors.coverageGoals.message}</span>
-                      )}
-                    </label>
-                  </div>
-                )}
-
-                {step === 2 && (
-                  <div className="grid gap-4">
-                    <label className="grid gap-2">
-                      <span className="text-sm font-normal text-foreground">Full name</span>
-                      <Input {...form.register("fullName")} className="min-h-[48px] text-foreground" />
-                      {form.formState.errors.fullName && (
-                        <span className="text-sm font-normal text-warning">{form.formState.errors.fullName.message}</span>
-                      )}
-                    </label>
-                    <label className="grid gap-2">
-                      <span className="text-sm font-normal text-foreground">Email</span>
-                      <Input {...form.register("email")} type="email" className="min-h-[48px] text-foreground" />
-                      {form.formState.errors.email && (
-                        <span className="text-sm font-normal text-warning">{form.formState.errors.email.message}</span>
-                      )}
-                    </label>
-                    <label className="grid gap-2">
-                      <span className="text-sm font-normal text-foreground">Phone</span>
-                      <Input {...form.register("phone")} type="tel" className="min-h-[48px] text-foreground" />
-                      {form.formState.errors.phone && (
-                        <span className="text-sm font-normal text-warning">{form.formState.errors.phone.message}</span>
-                      )}
-                    </label>
-                    <label className="grid gap-2">
-                      <span className="text-sm font-normal text-foreground">Preferred callback method</span>
-                      <select
-                        {...form.register("preferredCallbackMethod")}
-                        className="min-h-[48px] rounded-lg border border-input bg-card px-4 py-3 text-base font-light text-foreground"
-                      >
-                        <option value="">Choose one</option>
-                        <option value="Phone">Phone</option>
-                        <option value="Email">Email</option>
-                      </select>
-                      {form.formState.errors.preferredCallbackMethod && (
-                        <span className="text-sm font-normal text-warning">{form.formState.errors.preferredCallbackMethod.message}</span>
-                      )}
-                    </label>
-                  </div>
-                )}
-
-                {error && (
-                  <div className="rounded-lg border border-warning bg-gray-50 p-4">
-                    <div className="flex items-start gap-3">
-                      <svg className="h-8 w-8 text-warning" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
-                      <p className="text-sm font-normal text-foreground">We could not submit your request. Please review your information and try again.</p>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">
-                  <Button type="button" onClick={prevStep} disabled={step === 0 || isPending} className="bg-accent text-foreground hover:bg-muted disabled:bg-gray-300 disabled:text-gray-600">Back</Button>
+                  {isLifeFlow && step === 1 && (
+                    <div className="space-y-6">
+                      <div>
+                        <h3 className="text-xl font-medium text-gray-900">
+                          How much coverage do you need?
+                        </h3>
+                        <p className="mt-2 text-sm font-light text-gray-600">
+                          Drag the slider to set your desired death benefit.
+                        </p>
+                      </div>
+                      <div className="rounded-xl bg-muted px-5 py-4 text-center">
+                        <p className="text-3xl font-medium tracking-tight text-gray-900">
+                          {formatCoverage(state.coverageAmount)}
+                        </p>
+                        <p className="mt-1 text-sm text-gray-600">coverage amount</p>
+                      </div>
+                      <label className="block">
+                        <span className="sr-only">Coverage amount</span>
+                        <input
+                          type="range"
+                          min={100_000}
+                          max={2_000_000}
+                          step={50_000}
+                          value={state.coverageAmount}
+                          onChange={(event) =>
+                            updateState("coverageAmount", Number(event.target.value))
+                          }
+                          className="h-2 w-full cursor-pointer appearance-none rounded-full bg-gray-200 accent-primary"
+                        />
+                        <div className="mt-2 flex justify-between text-xs text-gray-500">
+                          <span>$100K</span>
+                          <span>$2M</span>
+                        </div>
+                      </label>
+                    </div>
+                  )}
 
-                  {step < steps.length - 1 ? (
-                    <Button type="button" onClick={nextStep} className="bg-primary text-primary-foreground hover:bg-secondary">Next</Button>
-                  ) : (
-                    <Button type="submit" disabled={isPending} className="bg-primary text-primary-foreground hover:bg-secondary disabled:bg-gray-300 disabled:text-gray-600">{isPending ? "Submitting..." : "Submit request"}</Button>
+                  {isLifeFlow && step === 2 && (
+                    <div className="space-y-6">
+                      <div>
+                        <h3 className="text-xl font-medium text-gray-900">
+                          How long should coverage last?
+                        </h3>
+                        <p className="mt-2 text-sm font-light text-gray-600">
+                          Choose a level term length that matches your protection
+                          window.
+                        </p>
+                      </div>
+                      <div
+                        className="grid grid-cols-3 gap-3"
+                        role="group"
+                        aria-label="Term length"
+                      >
+                        {([10, 20, 30] as TermLength[]).map((term) => (
+                          <button
+                            key={term}
+                            type="button"
+                            onClick={() => updateState("termLength", term)}
+                            aria-pressed={state.termLength === term}
+                            className={`rounded-xl border px-4 py-4 text-center transition-colors ${
+                              state.termLength === term
+                                ? "border-primary bg-accent text-gray-900 shadow-sm"
+                                : "border-gray-200 bg-card text-gray-700 hover:border-gray-300"
+                            }`}
+                          >
+                            <span className="block text-2xl font-medium">{term}</span>
+                            <span className="mt-1 block text-xs text-gray-600">years</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {isLifeFlow && step === 3 && (
+                    <div className="space-y-6">
+                      <div>
+                        <h3 className="text-xl font-medium text-gray-900">
+                          What is your current age?
+                        </h3>
+                        <p className="mt-2 text-sm font-light text-gray-600">
+                          Age is a primary factor in term life pricing.
+                        </p>
+                      </div>
+                      <div className="rounded-xl bg-muted px-5 py-4 text-center">
+                        <p className="text-3xl font-medium tracking-tight text-gray-900">
+                          {state.age}
+                        </p>
+                        <p className="mt-1 text-sm text-gray-600">years old</p>
+                      </div>
+                      <label className="block">
+                        <span className="sr-only">Age</span>
+                        <input
+                          type="range"
+                          min={18}
+                          max={75}
+                          step={1}
+                          value={state.age}
+                          onChange={(event) =>
+                            updateState("age", Number(event.target.value))
+                          }
+                          className="h-2 w-full cursor-pointer appearance-none rounded-full bg-gray-200 accent-primary"
+                        />
+                        <div className="mt-2 flex justify-between text-xs text-gray-500">
+                          <span>18</span>
+                          <span>75</span>
+                        </div>
+                      </label>
+                    </div>
+                  )}
+
+                  {isLifeFlow && step === 4 && (
+                    <div className="space-y-6">
+                      <div>
+                        <h3 className="text-xl font-medium text-gray-900">Gender</h3>
+                        <p className="mt-2 text-sm font-light text-gray-600">
+                          Used for actuarial pricing estimates only.
+                        </p>
+                      </div>
+                      <div
+                        className="grid grid-cols-2 gap-3"
+                        role="group"
+                        aria-label="Gender"
+                      >
+                        {(
+                          [
+                            { value: "male", label: "Male" },
+                            { value: "female", label: "Female" },
+                          ] as const
+                        ).map((option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => updateState("gender", option.value)}
+                            aria-pressed={state.gender === option.value}
+                            className={`rounded-xl border px-4 py-5 text-center text-lg font-medium transition-colors ${
+                              state.gender === option.value
+                                ? "border-primary bg-accent text-gray-900 shadow-sm"
+                                : "border-gray-200 bg-card text-gray-700 hover:border-gray-300"
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {isLifeFlow && step === 5 && (
+                    <div className="space-y-6">
+                      <div>
+                        <h3 className="text-xl font-medium text-gray-900">
+                          Health &amp; tobacco status
+                        </h3>
+                        <p className="mt-2 text-sm font-light text-gray-600">
+                          Select the option that best describes your current
+                          situation.
+                        </p>
+                      </div>
+                      <div
+                        className="grid gap-3 sm:grid-cols-2"
+                        role="group"
+                        aria-label="Health and tobacco status"
+                      >
+                        {HEALTH_OPTIONS.map((option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => updateState("healthClass", option.value)}
+                            aria-pressed={state.healthClass === option.value}
+                            className={`rounded-xl border px-4 py-4 text-left transition-colors ${
+                              state.healthClass === option.value
+                                ? "border-primary bg-accent shadow-sm"
+                                : "border-gray-200 bg-card hover:border-gray-300"
+                            }`}
+                          >
+                            <span className="block font-medium text-gray-900">
+                              {option.label}
+                            </span>
+                            <span className="mt-1 block text-sm font-light text-gray-600">
+                              {option.description}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {isLifeFlow && step === 6 && (
+                    <div className="grid gap-4">
+                      <div>
+                        <h3 className="text-xl font-medium text-gray-900">
+                          Personalize your estimate
+                        </h3>
+                        <p className="mt-2 text-sm font-light text-gray-600">
+                          Your location and name help us tailor options to your
+                          situation.
+                        </p>
+                      </div>
+                      <label className="grid gap-2">
+                        <span className="text-sm font-normal text-foreground">
+                          ZIP code
+                        </span>
+                        <Input
+                          value={state.zipCode}
+                          onChange={(event) => updateState("zipCode", event.target.value)}
+                          inputMode="numeric"
+                          placeholder="Where you live"
+                          className="min-h-[48px] text-foreground"
+                        />
+                        {fieldErrors.zipCode && (
+                          <span className="text-sm font-normal text-warning">
+                            {fieldErrors.zipCode}
+                          </span>
+                        )}
+                      </label>
+                      <label className="grid gap-2">
+                        <span className="text-sm font-normal text-foreground">
+                          Full name
+                        </span>
+                        <Input
+                          value={state.fullName}
+                          onChange={(event) => updateState("fullName", event.target.value)}
+                          placeholder="As it would appear on a policy"
+                          className="min-h-[48px] text-foreground"
+                        />
+                        {fieldErrors.fullName && (
+                          <span className="text-sm font-normal text-warning">
+                            {fieldErrors.fullName}
+                          </span>
+                        )}
+                      </label>
+                    </div>
+                  )}
+
+                  {isLifeFlow && step === 7 && (
+                    <div className="grid gap-4">
+                      <div>
+                        <h3 className="text-xl font-medium text-gray-900">
+                          How can we reach you?
+                        </h3>
+                        <p className="mt-2 text-sm font-light text-gray-600">
+                          We&apos;ll send your personalized comparison and follow
+                          up about your estimate.
+                        </p>
+                      </div>
+                      <label className="grid gap-2">
+                        <span className="text-sm font-normal text-foreground">Email</span>
+                        <Input
+                          value={state.email}
+                          onChange={(event) => updateState("email", event.target.value)}
+                          type="email"
+                          className="min-h-[48px] text-foreground"
+                        />
+                        {fieldErrors.email && (
+                          <span className="text-sm font-normal text-warning">
+                            {fieldErrors.email}
+                          </span>
+                        )}
+                      </label>
+                      <label className="grid gap-2">
+                        <span className="text-sm font-normal text-foreground">Phone</span>
+                        <Input
+                          value={state.phone}
+                          onChange={(event) => updateState("phone", event.target.value)}
+                          type="tel"
+                          className="min-h-[48px] text-foreground"
+                        />
+                        {fieldErrors.phone && (
+                          <span className="text-sm font-normal text-warning">
+                            {fieldErrors.phone}
+                          </span>
+                        )}
+                      </label>
+                      <TcpaConsentCheckbox
+                        checked={tcpaConsent}
+                        onChange={setTcpaConsent}
+                        error={fieldErrors.tcpaConsent}
+                      />
+                      <label className="grid gap-2">
+                        <span className="text-sm font-normal text-foreground">
+                          Preferred callback method
+                        </span>
+                        <select
+                          value={state.preferredCallbackMethod}
+                          onChange={(event) =>
+                            updateState("preferredCallbackMethod", event.target.value)
+                          }
+                          className="min-h-[48px] rounded-lg border border-input bg-card px-4 py-3 text-base font-light text-foreground"
+                        >
+                          <option value="">Choose one</option>
+                          <option value="Phone">Phone</option>
+                          <option value="Email">Email</option>
+                        </select>
+                        {fieldErrors.preferredCallbackMethod && (
+                          <span className="text-sm font-normal text-warning">
+                            {fieldErrors.preferredCallbackMethod}
+                          </span>
+                        )}
+                      </label>
+                    </div>
                   )}
                 </div>
-              </form>
+
+                <HoneypotField value={companyWebsite} onChange={setCompanyWebsite} />
+
+                {isLastLifeStep && (
+                  <TurnstileWidget
+                    onToken={setTurnstileToken}
+                    resetSignal={turnstileReset}
+                  />
+                )}
+
+                <FormValidationStatus
+                  errors={[
+                    fieldErrors.coverageType,
+                    fieldErrors.zipCode,
+                    fieldErrors.fullName,
+                    fieldErrors.email,
+                    fieldErrors.phone,
+                    fieldErrors.preferredCallbackMethod,
+                    fieldErrors.tcpaConsent,
+                  ]}
+                />
+
+                {submitError && <FormSubmitError message={submitError} />}
+
+                <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">
+                  <Button
+                    type="button"
+                    onClick={prevStep}
+                    disabled={step === 0 || isPending}
+                    className="bg-accent text-foreground hover:bg-muted disabled:bg-gray-300 disabled:text-gray-600"
+                  >
+                    Back
+                  </Button>
+
+                  {step === 0 && state.coverageType !== "Life" ? (
+                    <Button
+                      type="button"
+                      onClick={nextStep}
+                      disabled={!state.coverageType || isPending}
+                      className="bg-primary text-primary-foreground hover:bg-secondary disabled:bg-gray-300 disabled:text-gray-600"
+                    >
+                      {state.coverageType === "Medicare" || state.coverageType === "Advocacy"
+                        ? "Schedule a Free Consultation"
+                        : "Next"}
+                    </Button>
+                  ) : isLastLifeStep ? (
+                    <div className="flex flex-col items-stretch gap-3 sm:items-end">
+                      <PrivacyPolicyLink />
+                      <Button
+                        type="button"
+                        onClick={handleSubmit}
+                        disabled={
+                          isPending || (turnstileRequired && !turnstileToken)
+                        }
+                        className="bg-primary text-primary-foreground hover:bg-secondary disabled:bg-gray-300 disabled:text-gray-600"
+                      >
+                        {isPending ? "Submitting..." : "Submit request"}
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      type="button"
+                      onClick={nextStep}
+                      disabled={isPending}
+                      className="bg-primary text-primary-foreground hover:bg-secondary"
+                    >
+                      {step === 0 ? "Next" : "Continue"}
+                    </Button>
+                  )}
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>
 
-        <div className="grid gap-4">
-          <Card className="border border-gray-200 bg-tertiary">
-            <CardContent className="p-6">
-              <h3 className="text-2xl font-medium tracking-tight text-gray-50">What you get</h3>
-              <ul className="mt-6 grid gap-4">
-                {[
-                  "A broker-led review across available carriers and plan types",
-                  "Plain-language guidance for life insurance and Medicare decisions",
-                  "Advocacy support when care, billing, or enrollment feels unclear",
-                  "A clear next step with no obligation to enroll",
-                ].map((item) => (
-                  <li key={item} className="flex items-start gap-3">
-                    <svg className="h-6 w-6 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4"/></svg>
-                    <span className="text-base font-light leading-7 text-gray-100">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
+        <div className="grid gap-4 lg:sticky lg:top-8">
+          {showEstimate ? (
+            <>
+              <Card className="border border-gray-200 bg-tertiary">
+                <CardContent className="p-6 sm:p-8">
+                  <p className="text-sm font-light uppercase tracking-[0.18em] text-gray-200">
+                    Your estimate
+                  </p>
+                  <p className="mt-4 text-4xl font-medium tracking-tight text-gray-50 sm:text-5xl">
+                    {formatCurrency(estimate.lowMonthly)}–
+                    {formatCurrency(estimate.highMonthly)}
+                    <span className="text-2xl font-light text-gray-200">/mo</span>
+                  </p>
+                  <p className="mt-3 text-sm font-light leading-6 text-gray-200">
+                    {formatCoverage(state.coverageAmount)} · {state.termLength}-year
+                    term · age {state.age}
+                  </p>
 
-          <Card className="border border-gray-200 bg-card">
-            <CardContent className="p-6">
-              <h3 className="text-xl font-medium text-gray-900">Privacy reassurance</h3>
-              <p className="mt-3 text-base font-light leading-7 text-gray-700">Your information is used only to prepare plan recommendations and contact you about your request. We do not ask for Social Security or payment details in this form.</p>
-              <p className="mt-4 text-sm font-light text-gray-600">Expected follow-up: within one business day.</p>
-            </CardContent>
-          </Card>
+                  <div className="mt-6 rounded-xl border border-white/15 bg-white/5 p-4">
+                    <p className="text-sm font-light leading-6 text-gray-100">
+                      {siteConfig.estimateDisclaimer}
+                    </p>
+                  </div>
+
+                  <Link
+                    href="/schedule-consultation"
+                    className="mt-6 inline-flex w-full min-h-[52px] items-center justify-center rounded-xl bg-primary px-5 py-3 text-center text-sm font-semibold text-primary-foreground transition-colors hover:bg-secondary"
+                  >
+                    Get Your Exact Rate — Schedule a Free Consultation
+                  </Link>
+                </CardContent>
+              </Card>
+
+              <Card className="border border-gray-200 bg-card">
+                <CardContent className="p-6">
+                  <h3 className="text-xl font-medium text-gray-900">Why a range?</h3>
+                  <p className="mt-3 text-base font-light leading-7 text-gray-700">
+                    Final pricing depends on underwriting details, medical history,
+                    and carrier-specific guidelines. A consultation narrows this
+                    to your exact options — with no carrier bias.
+                  </p>
+                </CardContent>
+              </Card>
+            </>
+          ) : (
+            <Card className="border border-gray-200 bg-tertiary">
+              <CardContent className="p-6">
+                <h3 className="text-2xl font-medium tracking-tight text-gray-50">
+                  What you get
+                </h3>
+                <ul className="mt-6 grid gap-4">
+                  {WHAT_YOU_GET.map((item) => (
+                    <li key={item} className="flex items-start gap-3">
+                      <svg
+                        className="h-6 w-6 shrink-0 text-primary"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M9 12l2 2 4-4"
+                        />
+                      </svg>
+                      <span className="text-base font-light leading-7 text-gray-100">
+                        {item}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+        </div>
+
+        <div className="mt-4 rounded-xl border border-gray-200 bg-card px-5 py-4 sm:px-6">
+          <p className="text-base font-medium text-gray-900">Privacy reassurance</p>
+          <p className="mt-2 text-sm font-light leading-6 text-gray-700">
+            Your information is used only to prepare plan recommendations and contact
+            you about your request. We do not ask for Social Security or payment
+            details in this form.{" "}
+            <span className="text-gray-600">
+              Expected follow-up: within one business day.
+            </span>
+          </p>
         </div>
       </div>
     </section>

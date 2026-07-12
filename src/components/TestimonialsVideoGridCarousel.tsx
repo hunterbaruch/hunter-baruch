@@ -33,7 +33,7 @@ function TestimonialCard({
           controls
           preload="metadata"
           onPlay={() =>
-            trackEvent("testimonial_play", { client: testimonial.clientName })
+            trackEvent("testimonial_play", { testimonialId: testimonial.id })
           }
         />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/0 to-black/70" />
