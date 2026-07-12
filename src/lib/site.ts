@@ -55,10 +55,10 @@ export const navLinks = [
 ] as const;
 
 export const featuredCarriers = [
-  "Regional Life Network",
-  "SecureCare Medicare",
-  "Family Shield",
-  "Advantage Mutual",
+  { name: "UHC (UnitedHealthcare)", logo: "/carriers/uhc-pill.png" },
+  { name: "Anthem", logo: "/carriers/anthem-pill.png" },
+  { name: "Citizens Life", logo: "/carriers/citizens-pill.png" },
+  { name: "Transamerica", logo: "/carriers/transamerica-pill.png" },
 ] as const;
 
 export const coreServices = [
@@ -121,15 +121,79 @@ export const processSteps = [
   },
 ] as const;
 
-export const carrierCategories = ["All", "Life", "Medicare", "Advocacy"] as const;
+export const carrierCategories = ["All", "Life", "Medicare"] as const;
 
+export type CarrierCategory = Exclude<(typeof carrierCategories)[number], "All">;
+
+/** Life (A–Z), then Medicare (A–Z). Component also sorts for safety. */
 export const carrierDirectory = [
-  { name: "Regional Life Network", category: "Life" },
-  { name: "SecureCare Medicare", category: "Medicare" },
-  { name: "Family Shield", category: "Life" },
-  { name: "Advantage Mutual", category: "Medicare" },
-  { name: "CarePath Advocacy", category: "Advocacy" },
-  { name: "Heritage Life Partners", category: "Life" },
+  // Life — alphabetical
+  {
+    name: "Citizens Life",
+    category: "Life" as const,
+    logo: "/carriers/logos/citizens-life.png",
+  },
+  {
+    name: "Corebridge Financial",
+    category: "Life" as const,
+    logo: "/carriers/logos/corebridge.png",
+  },
+  {
+    name: "Gerber",
+    category: "Life" as const,
+    logo: "/carriers/logos/gerber.png",
+  },
+  {
+    name: "Transamerica",
+    category: "Life" as const,
+    logo: "/carriers/logos/transamerica.png",
+  },
+  {
+    name: "Wellabe",
+    category: "Life" as const,
+    logo: "/carriers/logos/wellabe.png",
+  },
+  // Medicare — alphabetical
+  {
+    name: "Aetna",
+    category: "Medicare" as const,
+    logo: "/carriers/logos/aetna.png",
+  },
+  {
+    name: "Anthem",
+    category: "Medicare" as const,
+    logo: "/carriers/logos/anthem.png",
+  },
+  {
+    name: "Clover Health",
+    category: "Medicare" as const,
+    logo: "/carriers/logos/clover.png",
+  },
+  {
+    name: "Devoted Health",
+    category: "Medicare" as const,
+    logo: "/carriers/logos/devoted.png",
+  },
+  {
+    name: "HealthSpring (formerly Cigna Medicare)",
+    category: "Medicare" as const,
+    logo: "/carriers/logos/healthspring.png",
+  },
+  {
+    name: "Kaiser Permanente",
+    category: "Medicare" as const,
+    logo: "/carriers/logos/kaiser.png",
+  },
+  {
+    name: "UHC (UnitedHealthcare)",
+    category: "Medicare" as const,
+    logo: "/carriers/logos/uhc.png",
+  },
+  {
+    name: "WellCare",
+    category: "Medicare" as const,
+    logo: "/carriers/logos/wellcare.png",
+  },
 ] as const;
 
 export const aboutStats = [

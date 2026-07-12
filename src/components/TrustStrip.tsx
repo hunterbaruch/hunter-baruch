@@ -15,14 +15,16 @@ export function TrustStrip() {
           </div>
           <div className="overflow-x-auto">
             <div className="flex items-center gap-6 whitespace-nowrap">
-              {featuredCarriers.map((name) => (
+              {featuredCarriers.map((carrier) => (
                 <div
-                  key={name}
-                  className="flex min-h-[56px] min-w-[180px] items-center justify-center rounded-full border border-gray-200 bg-gray-50 px-5 py-3"
+                  key={carrier.name}
+                  className="flex min-h-[56px] min-w-[180px] items-center justify-center"
                 >
-                  <span className="text-sm font-normal text-foreground">
-                    {name}
-                  </span>
+                  <img
+                    src={carrier.logo}
+                    alt={carrier.name}
+                    className="h-14 w-auto object-contain"
+                  />
                 </div>
               ))}
             </div>
