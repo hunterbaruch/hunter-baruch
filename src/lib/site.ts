@@ -269,13 +269,13 @@ export const faqs = [
 
 export const videoTestimonials = [
   {
-    id: "testimonial-1",
-    clientName: "Maria",
+    id: "testimonial-rhonda",
+    clientName: "Rhonda",
     context: "Medicare client",
-    videoUrl: "/ai_1.mp4",
-    posterUrl: "/ai_1-poster.png",
+    videoUrl: "/rhonda.mp4",
+    posterUrl: "/rhonda-poster.jpg",
     transcriptSnippet:
-      "They broke down my options, checked my doctors, and helped me enroll without making the process feel rushed.",
+      "She came to my home and made me so relaxed — not in it for the money, but to help people. She's thorough, knows her stuff, and has a real heart for seniors.",
     starRating: 5,
   },
   {
