@@ -369,79 +369,6 @@ export function QuoteWizard() {
                     <div className="space-y-6">
                       <div>
                         <h3 className="text-xl font-medium text-gray-900">
-                          How much coverage do you need?
-                        </h3>
-                        <p className="mt-2 text-sm font-light text-gray-600">
-                          Drag the slider to set your desired death benefit.
-                        </p>
-                      </div>
-                      <div className="rounded-xl bg-muted px-5 py-4 text-center">
-                        <p className="text-3xl font-medium tracking-tight text-gray-900">
-                          {formatCoverage(state.coverageAmount)}
-                        </p>
-                        <p className="mt-1 text-sm text-gray-600">coverage amount</p>
-                      </div>
-                      <label className="block">
-                        <span className="sr-only">Coverage amount</span>
-                        <input
-                          type="range"
-                          min={100_000}
-                          max={2_000_000}
-                          step={50_000}
-                          value={state.coverageAmount}
-                          onChange={(event) =>
-                            updateState("coverageAmount", Number(event.target.value))
-                          }
-                          className="h-2 w-full cursor-pointer appearance-none rounded-full bg-gray-200 accent-primary"
-                        />
-                        <div className="mt-2 flex justify-between text-xs text-gray-500">
-                          <span>$100K</span>
-                          <span>$2M</span>
-                        </div>
-                      </label>
-                    </div>
-                  )}
-
-                  {isLifeFlow && step === 2 && (
-                    <div className="space-y-6">
-                      <div>
-                        <h3 className="text-xl font-medium text-gray-900">
-                          How long should coverage last?
-                        </h3>
-                        <p className="mt-2 text-sm font-light text-gray-600">
-                          Choose a level term length that matches your protection
-                          window.
-                        </p>
-                      </div>
-                      <div
-                        className="grid grid-cols-3 gap-3"
-                        role="group"
-                        aria-label="Term length"
-                      >
-                        {([10, 20, 30] as TermLength[]).map((term) => (
-                          <button
-                            key={term}
-                            type="button"
-                            onClick={() => updateState("termLength", term)}
-                            aria-pressed={state.termLength === term}
-                            className={`rounded-xl border px-4 py-4 text-center transition-colors ${
-                              state.termLength === term
-                                ? "border-primary bg-accent text-gray-900 shadow-sm"
-                                : "border-gray-200 bg-card text-gray-700 hover:border-gray-300"
-                            }`}
-                          >
-                            <span className="block text-2xl font-medium">{term}</span>
-                            <span className="mt-1 block text-xs text-gray-600">years</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {isLifeFlow && step === 3 && (
-                    <div className="space-y-6">
-                      <div>
-                        <h3 className="text-xl font-medium text-gray-900">
                           What is your current age?
                         </h3>
                         <p className="mt-2 text-sm font-light text-gray-600">
@@ -475,7 +402,7 @@ export function QuoteWizard() {
                     </div>
                   )}
 
-                  {isLifeFlow && step === 4 && (
+                  {isLifeFlow && step === 2 && (
                     <div className="space-y-6">
                       <div>
                         <h3 className="text-xl font-medium text-gray-900">Gender</h3>
@@ -512,7 +439,7 @@ export function QuoteWizard() {
                     </div>
                   )}
 
-                  {isLifeFlow && step === 5 && (
+                  {isLifeFlow && step === 3 && (
                     <div className="space-y-6">
                       <div>
                         <h3 className="text-xl font-medium text-gray-900">
@@ -546,6 +473,79 @@ export function QuoteWizard() {
                             <span className="mt-1 block text-sm font-light text-gray-600">
                               {option.description}
                             </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {isLifeFlow && step === 4 && (
+                    <div className="space-y-6">
+                      <div>
+                        <h3 className="text-xl font-medium text-gray-900">
+                          How much coverage do you need?
+                        </h3>
+                        <p className="mt-2 text-sm font-light text-gray-600">
+                          Drag the slider to set your desired death benefit.
+                        </p>
+                      </div>
+                      <div className="rounded-xl bg-muted px-5 py-4 text-center">
+                        <p className="text-3xl font-medium tracking-tight text-gray-900">
+                          {formatCoverage(state.coverageAmount)}
+                        </p>
+                        <p className="mt-1 text-sm text-gray-600">coverage amount</p>
+                      </div>
+                      <label className="block">
+                        <span className="sr-only">Coverage amount</span>
+                        <input
+                          type="range"
+                          min={100_000}
+                          max={2_000_000}
+                          step={50_000}
+                          value={state.coverageAmount}
+                          onChange={(event) =>
+                            updateState("coverageAmount", Number(event.target.value))
+                          }
+                          className="h-2 w-full cursor-pointer appearance-none rounded-full bg-gray-200 accent-primary"
+                        />
+                        <div className="mt-2 flex justify-between text-xs text-gray-500">
+                          <span>$100K</span>
+                          <span>$2M</span>
+                        </div>
+                      </label>
+                    </div>
+                  )}
+
+                  {isLifeFlow && step === 5 && (
+                    <div className="space-y-6">
+                      <div>
+                        <h3 className="text-xl font-medium text-gray-900">
+                          How long should coverage last?
+                        </h3>
+                        <p className="mt-2 text-sm font-light text-gray-600">
+                          Choose a level term length that matches your protection
+                          window.
+                        </p>
+                      </div>
+                      <div
+                        className="grid grid-cols-3 gap-3"
+                        role="group"
+                        aria-label="Term length"
+                      >
+                        {([10, 20, 30] as TermLength[]).map((term) => (
+                          <button
+                            key={term}
+                            type="button"
+                            onClick={() => updateState("termLength", term)}
+                            aria-pressed={state.termLength === term}
+                            className={`rounded-xl border px-4 py-4 text-center transition-colors ${
+                              state.termLength === term
+                                ? "border-primary bg-accent text-gray-900 shadow-sm"
+                                : "border-gray-200 bg-card text-gray-700 hover:border-gray-300"
+                            }`}
+                          >
+                            <span className="block text-2xl font-medium">{term}</span>
+                            <span className="mt-1 block text-xs text-gray-600">years</span>
                           </button>
                         ))}
                       </div>

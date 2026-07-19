@@ -33,80 +33,81 @@ type RateTable = Record<
 >;
 
 /**
- * PLACEHOLDER DATA — TO BE REPLACED WITH REAL SAMPLE RATES
+ * PLACEHOLDER DATA — illustrative estimate rates only (not carrier quotes).
  *
  * Monthly premium per $1,000 of coverage, keyed by
- * [ageBand][term][gender][healthClass].
+ * [ageBand][term][gender][healthClass]. Tuned slightly lower for marketing
+ * appeal; final rates always come from underwriting.
  */
 const PLACEHOLDER_RATES: RateTable = {
   25: {
     10: {
-      male: { excellent: 0.11, good: 0.13, average: 0.15, tobacco: 0.26 },
-      female: { excellent: 0.1, good: 0.12, average: 0.14, tobacco: 0.24 },
+      male: { excellent: 0.08, good: 0.1, average: 0.12, tobacco: 0.2 },
+      female: { excellent: 0.07, good: 0.09, average: 0.11, tobacco: 0.18 },
     },
     20: {
-      male: { excellent: 0.15, good: 0.17, average: 0.2, tobacco: 0.35 },
-      female: { excellent: 0.13, good: 0.15, average: 0.18, tobacco: 0.32 },
+      male: { excellent: 0.11, good: 0.13, average: 0.15, tobacco: 0.27 },
+      female: { excellent: 0.1, good: 0.12, average: 0.14, tobacco: 0.24 },
     },
     30: {
-      male: { excellent: 0.2, good: 0.23, average: 0.27, tobacco: 0.47 },
-      female: { excellent: 0.18, good: 0.21, average: 0.24, tobacco: 0.43 },
+      male: { excellent: 0.15, good: 0.18, average: 0.21, tobacco: 0.36 },
+      female: { excellent: 0.14, good: 0.16, average: 0.19, tobacco: 0.33 },
     },
   },
   35: {
     10: {
-      male: { excellent: 0.16, good: 0.19, average: 0.22, tobacco: 0.38 },
-      female: { excellent: 0.14, good: 0.17, average: 0.2, tobacco: 0.35 },
+      male: { excellent: 0.12, good: 0.14, average: 0.17, tobacco: 0.29 },
+      female: { excellent: 0.11, good: 0.13, average: 0.15, tobacco: 0.26 },
     },
     20: {
-      male: { excellent: 0.22, good: 0.26, average: 0.3, tobacco: 0.52 },
-      female: { excellent: 0.19, good: 0.23, average: 0.27, tobacco: 0.47 },
+      male: { excellent: 0.17, good: 0.2, average: 0.23, tobacco: 0.4 },
+      female: { excellent: 0.14, good: 0.17, average: 0.2, tobacco: 0.36 },
     },
     30: {
-      male: { excellent: 0.29, good: 0.34, average: 0.39, tobacco: 0.68 },
-      female: { excellent: 0.26, good: 0.3, average: 0.35, tobacco: 0.62 },
+      male: { excellent: 0.22, good: 0.26, average: 0.3, tobacco: 0.52 },
+      female: { excellent: 0.2, good: 0.23, average: 0.27, tobacco: 0.47 },
     },
   },
   45: {
     10: {
-      male: { excellent: 0.23, good: 0.27, average: 0.32, tobacco: 0.55 },
-      female: { excellent: 0.21, good: 0.25, average: 0.29, tobacco: 0.5 },
+      male: { excellent: 0.17, good: 0.21, average: 0.24, tobacco: 0.42 },
+      female: { excellent: 0.16, good: 0.19, average: 0.22, tobacco: 0.38 },
     },
     20: {
-      male: { excellent: 0.32, good: 0.38, average: 0.44, tobacco: 0.76 },
-      female: { excellent: 0.28, good: 0.34, average: 0.39, tobacco: 0.69 },
+      male: { excellent: 0.24, good: 0.29, average: 0.33, tobacco: 0.58 },
+      female: { excellent: 0.21, good: 0.26, average: 0.3, tobacco: 0.52 },
     },
     30: {
-      male: { excellent: 0.42, good: 0.5, average: 0.58, tobacco: 1.0 },
-      female: { excellent: 0.38, good: 0.45, average: 0.52, tobacco: 0.91 },
+      male: { excellent: 0.32, good: 0.38, average: 0.44, tobacco: 0.76 },
+      female: { excellent: 0.29, good: 0.34, average: 0.4, tobacco: 0.69 },
     },
   },
   55: {
     10: {
-      male: { excellent: 0.33, good: 0.39, average: 0.46, tobacco: 0.79 },
-      female: { excellent: 0.3, good: 0.36, average: 0.42, tobacco: 0.72 },
+      male: { excellent: 0.25, good: 0.3, average: 0.35, tobacco: 0.6 },
+      female: { excellent: 0.23, good: 0.27, average: 0.32, tobacco: 0.55 },
     },
     20: {
-      male: { excellent: 0.46, good: 0.55, average: 0.64, tobacco: 1.1 },
-      female: { excellent: 0.41, good: 0.49, average: 0.57, tobacco: 0.99 },
+      male: { excellent: 0.35, good: 0.42, average: 0.49, tobacco: 0.84 },
+      female: { excellent: 0.31, good: 0.37, average: 0.43, tobacco: 0.75 },
     },
     30: {
-      male: { excellent: 0.6, good: 0.72, average: 0.84, tobacco: 1.44 },
-      female: { excellent: 0.54, good: 0.65, average: 0.76, tobacco: 1.31 },
+      male: { excellent: 0.46, good: 0.55, average: 0.64, tobacco: 1.1 },
+      female: { excellent: 0.41, good: 0.49, average: 0.58, tobacco: 1.0 },
     },
   },
   65: {
     10: {
-      male: { excellent: 0.47, good: 0.56, average: 0.66, tobacco: 1.13 },
-      female: { excellent: 0.43, good: 0.51, average: 0.6, tobacco: 1.03 },
+      male: { excellent: 0.36, good: 0.43, average: 0.5, tobacco: 0.86 },
+      female: { excellent: 0.33, good: 0.39, average: 0.46, tobacco: 0.78 },
     },
     20: {
-      male: { excellent: 0.65, good: 0.78, average: 0.91, tobacco: 1.56 },
-      female: { excellent: 0.59, good: 0.7, average: 0.82, tobacco: 1.41 },
+      male: { excellent: 0.49, good: 0.59, average: 0.69, tobacco: 1.19 },
+      female: { excellent: 0.45, good: 0.53, average: 0.62, tobacco: 1.07 },
     },
     30: {
-      male: { excellent: 0.86, good: 1.03, average: 1.2, tobacco: 2.06 },
-      female: { excellent: 0.78, good: 0.93, average: 1.09, tobacco: 1.87 },
+      male: { excellent: 0.65, good: 0.78, average: 0.91, tobacco: 1.56 },
+      female: { excellent: 0.59, good: 0.71, average: 0.83, tobacco: 1.42 },
     },
   },
 };
