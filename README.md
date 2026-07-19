@@ -6,7 +6,7 @@ Marketing website for Hunter Baruch Financial — built with Next.js, TypeScript
 
 - **Home** — Hero, services overview, patient advocacy highlight, testimonials preview
 - **Services** — Financial planning, investments, insurance, estate planning
-- **Patient Advocacy** — Medical bill review, insurance navigation, care support
+- **Patient Advocacy** — In-network specialists, RX cost programs, ancillary benefits, GLP-1 access, housing help
 - **Testimonials** — Client stories
 - **Contact** — Contact form and business details
 

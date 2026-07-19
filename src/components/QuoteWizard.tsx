@@ -62,7 +62,7 @@ const HEALTH_OPTIONS: {
 const WHAT_YOU_GET = [
   "A broker-led review across available carriers and plan types",
   "Plain-language guidance for life insurance and Medicare decisions",
-  "Advocacy support when care, billing, or enrollment feels unclear",
+  "Advocacy support for specialists, prescription costs, benefits, and enrollment",
   "A clear next step with no obligation to enroll",
 ];
 

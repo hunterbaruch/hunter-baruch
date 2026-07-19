@@ -74,6 +74,17 @@ export const siteConfig = {
    */
   eoDisclaimer:
     "Professional liability (errors and omissions) insurance is maintained through Markel American Insurance Co. (Policy No. MKLM7PLCA00129). E&O coverage does not guarantee results for any client matter and is not a substitute for careful product review or underwriting.",
+  /**
+   * Patient Advocacy service disclaimer — outcomes not guaranteed.
+   * Confirm with counsel before launch.
+   */
+  advocacyDisclaimer:
+    "Patient Advocacy is a complimentary support service offered by Hunter Baruch Financial. It is not an insurance product, does not replace medical advice, and does not guarantee program enrollment, coverage approval, specific cost savings, medication pricing, benefit setup, or housing assistance. Eligibility and results depend on individual circumstances, plan rules, manufacturer programs, and third-party availability.",
+  /**
+   * Third-party program / manufacturer non-affiliation (advocacy marketing).
+   */
+  advocacyThirdPartyDisclaimer:
+    "Hunter Baruch Financial is not affiliated with, sponsored by, or endorsed by the manufacturers of Wegovy® or Zepbound®, Medicaid, Medicare Extra Help (Low-Income Subsidy / LIS), Patient Assistance Programs, or other government or manufacturer programs referenced on this site. Brand and program names are used for identification only. Pricing and eligibility for any medication or assistance program vary by manufacturer offer, insurance plan, and individual circumstances and are not guaranteed.",
   legalLinks: [
     { href: "/privacy-policy", label: "Privacy Policy" },
     { href: "/terms-of-service", label: "Terms of Service" },
@@ -129,11 +140,11 @@ export const coreServices = [
   {
     title: "Patient Advocacy",
     href: "/patient-advocacy",
-    body: "Get support when care coordination, bills, or insurance questions become overwhelming.",
+    body: "After a diagnosis, get hands-on help with specialists, prescription costs, ancillary benefits, and housing support.",
     bullets: [
-      "Clarify care pathways and next steps",
-      "Support during billing and claim questions",
-      "A personal advocate for complex situations",
+      "Help finding in-network specialists after a diagnosis",
+      "Help with LIS, Patient Assistance Programs, and Medicaid for RX costs",
+      "Help setting up transportation, meal delivery, RX delivery, and more",
     ],
     action: "Request advocacy",
     image: "https://c.animaapp.com/mrcdjiw8FSusfK/img/ai_5.png",
@@ -295,7 +306,7 @@ export const videoTestimonials = [
     videoUrl: "/ai_1.mp4",
     posterUrl: "/ai_1-poster.png",
     transcriptSnippet:
-      "The advocacy support helped us navigate billing and follow-up care during a stressful time.",
+      "The advocacy support helped us find in-network care and get help with prescription costs during a stressful time.",
     starRating: 5,
   },
 ] as const;
@@ -348,31 +359,41 @@ export const healthServices = [
 
 export const advocacyPoints = [
   {
-    title: "Medical Bill Review",
+    title: "In-Network Specialists",
     description:
-      "We review statements, identify billing errors, and help you understand what you owe — and why.",
+      "After a diagnosis, we help you look for a specialist who is in network so you can move forward with care with fewer unexpected out-of-network costs when possible.",
   },
   {
-    title: "Insurance Navigation",
+    title: "Prescription Cost Assistance",
     description:
-      "Decode coverage terms, appeals processes, and out-of-network charges so you can make informed decisions.",
+      "We help eligible clients apply for programs such as Medicare Extra Help (LIS), Patient Assistance Programs, and Medicaid that may lower or help cover prescription costs when they qualify.",
   },
   {
-    title: "Care Coordination Support",
+    title: "Ancillary Benefits Setup",
     description:
-      "Get guidance on treatment options, provider networks, and financial implications before you commit.",
+      "We help set up benefits that can make daily life easier — transportation, meal delivery, prescription delivery, and other support services you may qualify for.",
   },
   {
-    title: "Advocacy at Every Step",
+    title: "GLP-1 Medication Access",
     description:
-      "A dedicated partner who speaks plainly, asks the right questions, and fights for fair outcomes on your behalf.",
+      "We help eligible clients explore access to GLP-1 medications such as Wegovy® and Zepbound®, which may cost as little as $50 a month through certain manufacturer or plan programs. Pricing and eligibility vary and are not guaranteed.",
+  },
+  {
+    title: "Housing Assistance",
+    description:
+      "For those who may qualify, we help identify and pursue housing assistance options so you have one less thing to worry about while focusing on your health. Availability is not guaranteed.",
+  },
+  {
+    title: "Caregiver Support",
+    description:
+      "Resources and guidance for the family member or caregiver managing appointments, benefits, prescriptions, and next steps — so the people supporting a patient are not left to navigate everything alone.",
   },
 ] as const;
 
 export const testimonials = [
   {
     quote:
-      "Hunter helped us untangle a stack of medical bills we had been avoiding for months. Within weeks we had a clear plan and real savings.",
+      "After my diagnosis, Hunter helped me find an in-network specialist and get enrolled in programs that cut my prescription costs dramatically.",
     name: "Sarah M.",
     role: "Patient Advocacy Client",
   },
