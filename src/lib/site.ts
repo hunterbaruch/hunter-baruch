@@ -290,13 +290,13 @@ export const videoTestimonials = [
     starRating: 5,
   },
   {
-    id: "testimonial-2",
-    clientName: "James",
-    context: "Life insurance client",
-    videoUrl: "/ai_1.mp4",
-    posterUrl: "/ai_1-poster.png",
+    id: "testimonial-larry",
+    clientName: "Larry",
+    context: "Medicare client",
+    videoUrl: "/larry.mp4",
+    posterUrl: "/larry-poster.jpg",
     transcriptSnippet:
-      "I finally understood which policy fit our budget and what would protect my family if something changed.",
+      "She helped me find a Medicare plan that best fits my needs, explained the benefit options in full detail, and enrolled me in a plan that saved me money on out-of-pocket costs with specialists in my network.",
     starRating: 5,
   },
   {
