@@ -300,13 +300,13 @@ export const videoTestimonials = [
     starRating: 5,
   },
   {
-    id: "testimonial-3",
-    clientName: "Elaine",
-    context: "Advocacy client",
-    videoUrl: "/ai_1.mp4",
-    posterUrl: "/ai_1-poster.png",
+    id: "testimonial-carl",
+    clientName: "Carl",
+    context: "Life & health insurance client",
+    videoUrl: "/carl.mp4",
+    posterUrl: "/carl-poster.jpg",
     transcriptSnippet:
-      "The advocacy support helped us find in-network care and get help with prescription costs during a stressful time.",
+      "She did a fantastic job — very helpful and informative. 10 out of 10, we love it.",
     starRating: 5,
   },
 ] as const;
