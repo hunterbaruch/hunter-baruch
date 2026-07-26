@@ -46,8 +46,8 @@ export const siteConfig = {
   licensing: {
     producerName: "Hunter Baruch Financial",
     licensedIn: "Georgia",
-    georgiaLicenseNumber: "3288180",
-    npn: "19685355",
+    georgiaLicenseNumber: "240785",
+    npn: "21596340",
     /** Errors & omissions / professional liability (Markel). */
     eo: {
       carrier: "Markel American Insurance Co.",
@@ -246,9 +246,9 @@ export const carrierDirectory = [
 ] as const;
 
 export const aboutStats = [
-  { value: "12+", label: "Years in business" },
-  { value: "18", label: "Licensed states" },
-  { value: "3", label: "Core service lines" },
+  { value: "10+", label: "Years in business" },
+  { value: "13", label: "Carrier appointments" },
+  { value: "3", label: "Core services" },
 ] as const;
 
 export const faqs = [

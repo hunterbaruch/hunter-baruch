@@ -17,7 +17,7 @@ Jurisdiction: Georgia-licensed insurance producer (OCI). Federal: GLBA, TCPA, AD
   - ⏳ Formal written information security program remains a business/policy exercise
 - [x] TCPA consent for phone/text (checkbox + stored timestamp/text version)
 - [x] Producer license / NPN disclosure in footer (`siteConfig.licensing`)
-  - [x] Georgia License No. **3288180** and NPN **19685355** live in footer + About
+  - [x] Georgia License No. **240785** and NPN **21596340** live in footer + About
   - ⏳ Confirm carrier appointment contracts require specific display format
   - ⏳ Re-verify active status in Sircon / NIPR / GA OCI lookup before launch and annually
 - [x] E&O carrier disclosure in footer (`siteConfig.eoDisclaimer` + `licensing.eo`)
@@ -93,7 +93,7 @@ Jurisdiction: Georgia-licensed insurance producer (OCI). Federal: GLBA, TCPA, AD
 - [ ] Mobile test of quote estimator + schedule + contact forms
 - [ ] Confirm SSL/HTTPS on final production domain (not only `*.vercel.app`)
 - [ ] Set all production env vars on Vercel (`AUTH_SECRET`, `FIELD_ENCRYPTION_KEY`, DB, Resend, etc.)
-- [x] Replace license/NPN placeholders with real values (3288180 / 19685355)
+- [x] Replace license/NPN placeholders with real values (240785 / 21596340)
 - [ ] Hunter (or compliance contact) reads Privacy Policy, Terms, TCPA consent, estimate disclaimer, gov disclaimer, E&O line
 - [ ] E&O / carrier disclaimer check completed (Markel + appointed carriers)
 - [ ] Confirm no product-specific annuity suitability page is required for lines currently marketed on site

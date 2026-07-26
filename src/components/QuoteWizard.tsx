@@ -499,9 +499,9 @@ export function QuoteWizard() {
                         <span className="sr-only">Coverage amount</span>
                         <input
                           type="range"
-                          min={100_000}
-                          max={2_000_000}
-                          step={50_000}
+                          min={25_000}
+                          max={1_000_000}
+                          step={25_000}
                           value={state.coverageAmount}
                           onChange={(event) =>
                             updateState("coverageAmount", Number(event.target.value))
@@ -509,8 +509,8 @@ export function QuoteWizard() {
                           className="h-2 w-full cursor-pointer appearance-none rounded-full bg-gray-200 accent-primary"
                         />
                         <div className="mt-2 flex justify-between text-xs text-gray-500">
-                          <span>$100K</span>
-                          <span>$2M</span>
+                          <span>$25K</span>
+                          <span>$1M</span>
                         </div>
                       </label>
                     </div>
