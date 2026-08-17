@@ -4,15 +4,24 @@ import { signIn } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+function isAuthConfigured() {
+  return Boolean(process.env.AUTH_SECRET && process.env.DATABASE_URL);
+}
+
 export default async function AdminLoginPage({
   searchParams,
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
   const params = await searchParams;
+  const configured = isAuthConfigured();
 
   async function loginAction(formData: FormData) {
     "use server";
+
+    if (!isAuthConfigured()) {
+      redirect("/admin/login?error=config");
+    }
 
     const email = String(formData.get("email") ?? "");
     const password = String(formData.get("password") ?? "");
@@ -59,15 +68,22 @@ export default async function AdminLoginPage({
           />
         </label>
 
-        {params.error && (
+        {!configured || params.error === "config" ? (
+          <p className="text-sm font-normal text-warning">
+            Admin sign-in is not configured on this host. Set{" "}
+            <code>AUTH_SECRET</code> and <code>DATABASE_URL</code> on the
+            deployment, then redeploy.
+          </p>
+        ) : params.error ? (
           <p className="text-sm font-normal text-warning">
             Invalid email or password.
           </p>
-        )}
+        ) : null}
 
         <Button
           type="submit"
-          className="bg-primary text-primary-foreground hover:bg-secondary"
+          disabled={!configured}
+          className="bg-primary text-primary-foreground hover:bg-secondary disabled:bg-gray-300 disabled:text-gray-600"
         >
           Sign in
         </Button>
