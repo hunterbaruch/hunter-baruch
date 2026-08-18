@@ -1,5 +1,5 @@
 /**
- * Verify Resend configuration and optionally send a test notification.
+ * Verify Resend configuration and optionally send test emails.
  *
  * Usage:
  *   npx tsx scripts/test-resend.ts
@@ -11,6 +11,7 @@
 import { loadEnvConfig } from "@next/env";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { sendLeadConfirmation } from "../src/lib/sendLeadConfirmation";
 import { sendLeadNotification } from "../src/lib/sendLeadNotification";
 import { getSiteBaseUrl } from "../src/lib/siteUrl";
 
@@ -52,24 +53,25 @@ async function main() {
 
   if (!shouldSend) {
     console.log(
-      "\nConfig looks complete. Run with --send to deliver a test email.",
+      "\nConfig looks complete. Run with --send to deliver admin + confirmation test emails.",
     );
     return;
   }
 
-  console.log("\nSending test notification...");
-  const result = await sendLeadNotification({
+  const to = process.env.LEAD_NOTIFICATION_EMAIL!;
+  console.log("\nSending admin notification test...");
+  const adminResult = await sendLeadNotification({
     name: "Resend Test",
-    email: process.env.LEAD_NOTIFICATION_EMAIL!,
+    email: to,
     referenceId: "TEST000",
     leadId: "test-lead-id",
-    source: "contact",
-    topic: "Resend setup test",
+    source: "quote_wizard",
+    topic: "Life Insurance",
     createdAt: new Date(),
   });
 
-  if (!result.ok) {
-    console.error("Send failed:", result.reason, result.detail);
+  if (!adminResult.ok) {
+    console.error("Admin send failed:", adminResult.reason, adminResult.detail);
     console.error(
       "\nCommon fixes:",
       "- Verify domain in Resend before using a custom FROM address",
@@ -78,7 +80,33 @@ async function main() {
     process.exit(1);
   }
 
-  console.log("Test email sent.", result.resendId ? `id: ${result.resendId}` : "");
+  console.log(
+    "Admin test sent.",
+    adminResult.resendId ? `id: ${adminResult.resendId}` : "",
+  );
+
+  console.log("\nSending prospect confirmation test...");
+  const confirmResult = await sendLeadConfirmation({
+    name: "Resend Test",
+    email: to,
+    referenceId: "TEST000",
+    source: "quote_wizard",
+    topic: "Life Insurance",
+  });
+
+  if (!confirmResult.ok) {
+    console.error(
+      "Confirmation send failed:",
+      confirmResult.reason,
+      confirmResult.detail,
+    );
+    process.exit(1);
+  }
+
+  console.log(
+    "Confirmation test sent.",
+    confirmResult.resendId ? `id: ${confirmResult.resendId}` : "",
+  );
 }
 
 main().catch((error) => {

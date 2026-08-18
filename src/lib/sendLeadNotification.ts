@@ -1,4 +1,7 @@
+import { formatLeadSource } from "@/lib/leadDisplay";
+import { getResendConfig, sendResendEmail } from "@/lib/resend";
 import { getSiteBaseUrl } from "@/lib/siteUrl";
+import type { ResendSendResult } from "@/lib/resend";
 
 export type LeadNotificationParams = {
   name: string;
@@ -10,23 +13,27 @@ export type LeadNotificationParams = {
   createdAt: Date;
 };
 
-export type LeadNotificationResult =
-  | { ok: true; resendId?: string }
-  | { ok: false; reason: "not_configured" | "api_error"; detail: string };
+export type LeadNotificationResult = ResendSendResult;
 
 /**
- * Minimal lead notification via Resend REST API.
+ * Minimal admin alert via Resend.
  * Body intentionally omits health answers and full submission details.
  */
 function formatLeadNotificationText(params: {
   name: string;
   referenceId: string;
   leadId: string;
+  source: string;
+  topic?: string | null;
   createdAt: Date;
 }) {
   const dashboardUrl = `${getSiteBaseUrl()}/admin/leads/${params.leadId}`;
+  const sourceLabel = formatLeadSource(params.source);
+  const topic = params.topic?.trim() || "General inquiry";
   return [
-    `New lead submitted — ${params.name}, ${params.createdAt.toISOString()}`,
+    `New ${sourceLabel} lead — ${params.name}`,
+    `Submitted: ${params.createdAt.toISOString()}`,
+    `Topic: ${topic}`,
     "",
     `Reference: ${params.referenceId}`,
     `View full details (sign-in required): ${dashboardUrl}`,
@@ -38,11 +45,9 @@ function formatLeadNotificationText(params: {
 export async function sendLeadNotification(
   params: LeadNotificationParams,
 ): Promise<LeadNotificationResult> {
-  const apiKey = process.env.RESEND_API_KEY?.trim();
-  const toEmail = process.env.LEAD_NOTIFICATION_EMAIL?.trim();
-  const fromEmail = process.env.LEAD_FROM_EMAIL?.trim();
+  const { apiKey, fromEmail, adminEmail } = getResendConfig();
 
-  if (!apiKey || !toEmail || !fromEmail) {
+  if (!apiKey || !fromEmail || !adminEmail) {
     return {
       ok: false,
       reason: "not_configured",
@@ -51,43 +56,13 @@ export async function sendLeadNotification(
     };
   }
 
-  const subjectTopic = params.topic ?? "General inquiry";
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: fromEmail,
-      to: [toEmail],
-      reply_to: params.email,
-      subject: `New ${params.source} lead — ${subjectTopic} (${params.referenceId})`,
-      text: formatLeadNotificationText({
-        name: params.name,
-        referenceId: params.referenceId,
-        leadId: params.leadId,
-        createdAt: params.createdAt,
-      }),
-    }),
+  const sourceLabel = formatLeadSource(params.source);
+  const subjectTopic = params.topic?.trim() || "General inquiry";
+
+  return sendResendEmail({
+    to: adminEmail,
+    replyTo: params.email,
+    subject: `New ${sourceLabel} lead — ${subjectTopic} (${params.referenceId})`,
+    text: formatLeadNotificationText(params),
   });
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    return {
-      ok: false,
-      reason: "api_error",
-      detail: errorBody || `HTTP ${response.status}`,
-    };
-  }
-
-  let resendId: string | undefined;
-  try {
-    const data = (await response.json()) as { id?: string };
-    resendId = data.id;
-  } catch {
-    // response was ok; id optional
-  }
-
-  return { ok: true, resendId };
 }

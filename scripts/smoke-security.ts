@@ -113,6 +113,23 @@ async function main() {
   if (!(young < mid && mid < older)) {
     throw new Error("Age-band interpolation should increase with age");
   }
+  const { formatConfirmationText } = await import(
+    "../src/lib/sendLeadConfirmation"
+  );
+  const confirmation = formatConfirmationText({
+    name: "Jane Doe",
+    email: "jane@example.com",
+    referenceId: "ABC1234",
+    source: "quote_wizard",
+    topic: "Life Insurance",
+  });
+  if (!confirmation.includes("ABC1234")) {
+    throw new Error("Confirmation email missing reference ID");
+  }
+  if (/health class|excellent|tobacco|premium/i.test(confirmation)) {
+    throw new Error("Confirmation email must omit health and pricing details");
+  }
+
   const fingerprint = createHash("sha256")
     .update(getTcpaConsentText())
     .digest("hex")

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { persistLead } from "@/lib/persistLead";
 import { leadSubmissionSchema, formatZodError } from "@/lib/leadSchema";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
+import { sendLeadConfirmation } from "@/lib/sendLeadConfirmation";
 import { sendLeadNotification } from "@/lib/sendLeadNotification";
 import { siteConfig } from "@/lib/site";
 import { verifyTurnstileToken } from "@/lib/turnstile";
@@ -155,22 +156,40 @@ export async function POST(request: Request) {
     );
   }
 
-  const emailResult = await sendLeadNotification({
-    name: payload.name,
-    email: payload.email,
-    referenceId: lead.referenceId,
-    leadId: lead.id,
-    source: payload.source,
-    topic: payload.topic,
-    createdAt: lead.createdAt,
-  });
+  const [adminEmail, prospectEmail] = await Promise.all([
+    sendLeadNotification({
+      name: payload.name,
+      email: payload.email,
+      referenceId: lead.referenceId,
+      leadId: lead.id,
+      source: payload.source,
+      topic: payload.topic,
+      createdAt: lead.createdAt,
+    }),
+    sendLeadConfirmation({
+      name: payload.name,
+      email: payload.email,
+      referenceId: lead.referenceId,
+      source: payload.source,
+      topic: payload.topic,
+    }),
+  ]);
 
-  if (!emailResult.ok) {
+  if (!adminEmail.ok) {
     reportLeadFailure(
       "email",
-      emailResult.reason === "not_configured"
-        ? `Lead ${lead.referenceId} saved without email — ${emailResult.detail}`
-        : `Lead ${lead.referenceId} Resend error: ${emailResult.detail}`,
+      adminEmail.reason === "not_configured"
+        ? `Lead ${lead.referenceId} saved without admin email — ${adminEmail.detail}`
+        : `Lead ${lead.referenceId} admin Resend error: ${adminEmail.detail}`,
+    );
+  }
+
+  if (!prospectEmail.ok) {
+    reportLeadFailure(
+      "email",
+      prospectEmail.reason === "not_configured"
+        ? `Lead ${lead.referenceId} saved without confirmation email — ${prospectEmail.detail}`
+        : `Lead ${lead.referenceId} confirmation Resend error: ${prospectEmail.detail}`,
     );
   }
 
