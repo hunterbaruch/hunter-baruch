@@ -11,12 +11,14 @@ import { TurnstileWidget } from "@/components/TurnstileWidget";
 import { Textarea } from "@/components/ui/textarea";
 import {
   buildSchedulePrefill,
+  clearQuoteWizardSnapshot,
   getQuoteWizardStorageRaw,
   getServerQuoteWizardStorageRaw,
   parseQuoteWizardStorageRaw,
   subscribeQuoteWizardStorage,
   type ConsultationTopic,
 } from "@/lib/quoteWizardStorage";
+import { CopyReferenceId } from "@/components/CopyReferenceId";
 import { submitLead } from "@/lib/submitLead";
 import { siteConfig } from "@/lib/site";
 import { isTurnstileEnforcedOnClient } from "@/lib/turnstile";
@@ -37,7 +39,11 @@ const TOPIC_OPTIONS: ConsultationTopic[] = [
   "Patient Advocacy",
 ];
 
-export function ScheduleConsultationForm() {
+export function ScheduleConsultationForm({
+  existingReferenceId,
+}: {
+  existingReferenceId?: string;
+}) {
   const storedRaw = useSyncExternalStore(
     subscribeQuoteWizardStorage,
     getQuoteWizardStorageRaw,
@@ -49,7 +55,10 @@ export function ScheduleConsultationForm() {
   );
   const prefill = useMemo(() => buildSchedulePrefill(snapshot), [snapshot]);
   const quoteSummary = prefill.quoteSummary;
-  const healthClass = snapshot?.healthClass ?? null;
+  const lifeSnapshot = snapshot?.coverageType === "Life" ? snapshot : null;
+  const healthClass = lifeSnapshot?.healthClass || null;
+  const linkedReferenceId =
+    existingReferenceId?.trim() || snapshot?.submittedReferenceId || undefined;
 
   // Local edits overlay prefill so we avoid setState-in-effect hydration.
   const [edits, setEdits] = useState<Partial<FormState>>({});
@@ -125,6 +134,12 @@ export function ScheduleConsultationForm() {
       message: form.message.trim(),
       quoteSummary,
       healthClass,
+      zipCode: lifeSnapshot?.zipCode?.trim() || undefined,
+      coverageAmount: lifeSnapshot?.coverageAmount,
+      termLength: lifeSnapshot?.termLength,
+      age: lifeSnapshot?.age,
+      gender: lifeSnapshot?.gender || undefined,
+      existingReferenceId: linkedReferenceId,
       companyWebsite,
       tcpaConsent,
       turnstileToken: turnstileToken ?? undefined,
@@ -143,12 +158,13 @@ export function ScheduleConsultationForm() {
     }
 
     setSubmittedId(result.referenceId ?? "");
+    clearQuoteWizardSnapshot();
     trackEvent("schedule_consultation_submit", { topic: form.topic });
   }
 
   if (submittedId) {
     return (
-      <div className="rounded-lg border border-success bg-accent p-6">
+      <div className="rounded-lg border border-success bg-accent p-6" role="status">
         <div className="flex items-start gap-4">
           <svg
             className="h-8 w-8 text-success"
@@ -169,7 +185,7 @@ export function ScheduleConsultationForm() {
             <p className="mt-2 text-base font-light leading-7 text-gray-700">
               We&apos;ll follow up within one business day to schedule your
               consultation. Reference ID:{" "}
-              <span className="font-mono text-sm text-foreground">{submittedId}</span>
+              <CopyReferenceId referenceId={submittedId} />
             </p>
           </div>
         </div>

@@ -56,7 +56,7 @@ export default function LifePage() {
                 </ul>
                 <div className="mt-8">
                   <Link
-                    href="/#pricing"
+                    href="/life/quote"
                     className="inline-flex items-center gap-3 rounded-pill bg-tertiary px-5 py-3 text-base font-normal text-tertiary-foreground transition-colors duration-200 ease-in hover:bg-gray-800"
                   >
                     {lifeService.action}

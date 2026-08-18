@@ -37,17 +37,23 @@ export const leadSubmissionSchema = z
       .trim()
       .min(10, "Add a few details so we can help.")
       .max(10_000, "Message is too long."),
-    quoteSummary: z
-      .string()
-      .trim()
-      .max(5_000)
-      .nullable()
-      .optional(),
+    quoteSummary: z.string().trim().max(5_000).nullable().optional(),
     /** Self-reported underwriting class — health-related; encrypted at rest. */
     healthClass: z
       .enum(["excellent", "good", "average", "tobacco"])
       .optional()
       .nullable(),
+    zipCode: z.string().trim().max(10).optional().or(z.literal("")),
+    coverageAmount: z.number().int().positive().max(10_000_000).optional().nullable(),
+    termLength: z.union([z.literal(10), z.literal(20), z.literal(30)]).optional().nullable(),
+    age: z.number().int().min(18).max(75).optional().nullable(),
+    gender: z.enum(["male", "female"]).optional().nullable(),
+    existingReferenceId: z
+      .string()
+      .trim()
+      .max(12)
+      .optional()
+      .or(z.literal("")),
     /**
      * Honeypot — checked before Zod parse in the API route.
      * Allowed here so leftover empty values do not fail validation.
@@ -79,8 +85,7 @@ export const leadSubmissionSchema = z
       ctx.addIssue({
         code: "custom",
         path: ["tcpaConsent"],
-        message:
-          "Please confirm consent to be contacted by phone or text.",
+        message: "Please confirm consent to be contacted by phone or text.",
       });
     }
   });

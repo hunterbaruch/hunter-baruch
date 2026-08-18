@@ -62,6 +62,27 @@ async function main() {
     throw new Error("Schema should allow companyWebsite string for API pre-check");
   }
 
+  const withQuoteFields = leadSubmissionSchema.safeParse({
+    source: "quote_wizard",
+    name: "Jane Doe",
+    email: "jane@example.com",
+    phone: "5551234567",
+    message: "Submitted via homepage quote wizard with enough detail.",
+    healthClass: "good",
+    quoteSummary: "Health class: good",
+    zipCode: "30350",
+    coverageAmount: 500000,
+    termLength: 20,
+    age: 35,
+    gender: "male",
+    existingReferenceId: "ABC1234",
+    tcpaConsent: true,
+    companyWebsite: "",
+  });
+  if (!withQuoteFields.success) {
+    throw new Error(`Expected structured quote payload: ${withQuoteFields.error.message}`);
+  }
+
   const expires = computeRetentionExpiresAt(new Date("2026-01-01T00:00:00Z"), 24);
   if (expires.toISOString() !== "2028-01-01T00:00:00.000Z") {
     throw new Error(`Unexpected retention expiry: ${expires.toISOString()}`);
@@ -72,7 +93,26 @@ async function main() {
   }
   if (!TCPA_CONSENT_VERSION) throw new Error("Missing consent version");
 
-  // Stable fingerprint so CI can assert helpers load
+  const { interpolateRatePerThousand } = await import("../src/lib/quoteEstimate");
+  const { isGeorgiaZip, isValidUsZip } = await import("../src/lib/georgiaZip");
+  const { formatLeadSource } = await import("../src/lib/leadDisplay");
+
+  if (!isValidUsZip("30350") || isValidUsZip("3035") || isValidUsZip("abcde")) {
+    throw new Error("ZIP validation failed");
+  }
+  if (!isGeorgiaZip("30350") || isGeorgiaZip("10001")) {
+    throw new Error("Georgia ZIP check failed");
+  }
+  if (formatLeadSource("quote_wizard") !== "Quote tool") {
+    throw new Error("Lead source label failed");
+  }
+
+  const young = interpolateRatePerThousand(18, 20, "male", "good");
+  const mid = interpolateRatePerThousand(35, 20, "male", "good");
+  const older = interpolateRatePerThousand(75, 20, "male", "good");
+  if (!(young < mid && mid < older)) {
+    throw new Error("Age-band interpolation should increase with age");
+  }
   const fingerprint = createHash("sha256")
     .update(getTcpaConsentText())
     .digest("hex")

@@ -131,6 +131,12 @@ export async function POST(request: Request) {
     message: parsed.data.message,
     quoteSummary: parsed.data.quoteSummary ?? null,
     healthClass: parsed.data.healthClass ?? null,
+    zipCode: parsed.data.zipCode || undefined,
+    coverageAmount: parsed.data.coverageAmount ?? undefined,
+    termLength: parsed.data.termLength ?? undefined,
+    age: parsed.data.age ?? undefined,
+    gender: parsed.data.gender ?? undefined,
+    existingReferenceId: parsed.data.existingReferenceId || undefined,
     tcpaConsent: parsed.data.tcpaConsent,
   };
 

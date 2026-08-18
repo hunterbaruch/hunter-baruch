@@ -24,7 +24,7 @@ export type PremiumEstimate = {
 // Rate lookup table
 // ---------------------------------------------------------------------------
 
-const AGE_BANDS = [25, 35, 45, 55, 65] as const;
+const AGE_BANDS = [18, 25, 35, 45, 55, 65, 75] as const;
 type AgeBand = (typeof AGE_BANDS)[number];
 
 type RateTable = Record<
@@ -40,6 +40,20 @@ type RateTable = Record<
  * appeal; final rates always come from underwriting.
  */
 const PLACEHOLDER_RATES: RateTable = {
+  18: {
+    10: {
+      male: { excellent: 0.07, good: 0.08, average: 0.1, tobacco: 0.16 },
+      female: { excellent: 0.06, good: 0.07, average: 0.09, tobacco: 0.15 },
+    },
+    20: {
+      male: { excellent: 0.09, good: 0.11, average: 0.12, tobacco: 0.22 },
+      female: { excellent: 0.08, good: 0.1, average: 0.11, tobacco: 0.2 },
+    },
+    30: {
+      male: { excellent: 0.12, good: 0.15, average: 0.17, tobacco: 0.3 },
+      female: { excellent: 0.11, good: 0.13, average: 0.16, tobacco: 0.27 },
+    },
+  },
   25: {
     10: {
       male: { excellent: 0.08, good: 0.1, average: 0.12, tobacco: 0.2 },
@@ -108,6 +122,20 @@ const PLACEHOLDER_RATES: RateTable = {
     30: {
       male: { excellent: 0.65, good: 0.78, average: 0.91, tobacco: 1.56 },
       female: { excellent: 0.59, good: 0.71, average: 0.83, tobacco: 1.42 },
+    },
+  },
+  75: {
+    10: {
+      male: { excellent: 0.54, good: 0.65, average: 0.75, tobacco: 1.29 },
+      female: { excellent: 0.5, good: 0.59, average: 0.69, tobacco: 1.17 },
+    },
+    20: {
+      male: { excellent: 0.74, good: 0.89, average: 1.04, tobacco: 1.79 },
+      female: { excellent: 0.68, good: 0.8, average: 0.93, tobacco: 1.61 },
+    },
+    30: {
+      male: { excellent: 0.98, good: 1.17, average: 1.37, tobacco: 2.34 },
+      female: { excellent: 0.89, good: 1.07, average: 1.25, tobacco: 2.13 },
     },
   },
 };

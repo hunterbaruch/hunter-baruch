@@ -30,7 +30,7 @@ Resend’s sandbox sender only works for testing:
 
 ```env
 LEAD_FROM_EMAIL="Hunter Baruch Financial <leads@hunter-baruch.com>"
-LEAD_NOTIFICATION_EMAIL="hunterbaruchfinancial@gmail.com"
+LEAD_NOTIFICATION_EMAIL="rdhunter@hunter-baruch.com"
 ```
 
 ## 3. Environment variables
@@ -39,7 +39,7 @@ Add to `.env` (local) and **Vercel → Settings → Environment Variables** (Pre
 
 ```env
 RESEND_API_KEY="re_..."
-LEAD_NOTIFICATION_EMAIL="hunterbaruchfinancial@gmail.com"
+LEAD_NOTIFICATION_EMAIL="rdhunter@hunter-baruch.com"
 LEAD_FROM_EMAIL="onboarding@resend.dev"
 ```
 

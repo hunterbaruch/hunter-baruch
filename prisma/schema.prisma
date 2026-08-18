@@ -36,7 +36,14 @@ model Lead {
   quoteSummary            String?   @db.Text
   /// Health-related: self-reported underwriting class. Field-level encrypted (AES-256-GCM).
   healthClass             String?   @db.Text
+  zipCode                 String?
+  coverageAmount          Int?
+  termLength              Int?
+  age                     Int?
+  gender                  String?
   status                  String    @default("new")
+  /// Staff notes — not submitted by the public form.
+  adminNotes              String?   @db.Text
 
   /// TCPA consent record — timestamp + exact text version the prospect agreed to.
   tcpaConsentAt           DateTime?

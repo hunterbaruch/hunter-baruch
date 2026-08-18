@@ -10,7 +10,7 @@ export const siteConfig = {
   logo: "/hb-logo-header.png",
   contact: {
     phone: "(943) 230-2740",
-    email: "hello@hunterbaruchfinancial.com",
+    email: "rdhunter@hunter-baruch.com",
     address: "8735 Dunwoody Place, Suite R\nAtlanta, GA 30350",
     /** Single-line form for schema.org / maps. */
     addressLocality: "Atlanta",
@@ -120,7 +120,8 @@ export const coreServices = [
       "Carrier comparison based on goals and budget",
       "Help reviewing underwriting expectations",
     ],
-    action: "Start a life quote",
+    action: "Get a Life Quote",
+    actionHref: "/life/quote",
     image: "https://c.animaapp.com/mrcdjiw8FSusfK/img/ai_2.png",
     alt: "Couple speaking with insurance advisor",
   },

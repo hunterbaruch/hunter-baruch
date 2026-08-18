@@ -2,7 +2,13 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import {
   Card,
   CardContent,
@@ -13,6 +19,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CopyReferenceId } from "@/components/CopyReferenceId";
 import {
   calculatePremiumEstimate,
   formatCoverage,
@@ -20,11 +27,15 @@ import {
   type HealthClass,
   type TermLength,
 } from "@/lib/quoteEstimate";
+import { isGeorgiaZip, isValidUsZip } from "@/lib/georgiaZip";
 import {
   buildQuoteSummary,
+  canCalculateEstimate,
   clearQuoteWizardSnapshot,
   getQuoteWizardStorageRaw,
   getServerQuoteWizardStorageRaw,
+  LIFE_STEP,
+  LIFE_STEP_COUNT,
   parseQuoteWizardStorageRaw,
   subscribeQuoteWizardStorage,
   topicFromCoverageType,
@@ -41,8 +52,6 @@ import { submitLead } from "@/lib/submitLead";
 import { siteConfig } from "@/lib/site";
 import { isTurnstileEnforcedOnClient } from "@/lib/turnstile";
 import { trackEvent } from "@/lib/utils";
-
-const LIFE_STEP_COUNT = 8;
 
 const HEALTH_OPTIONS: {
   value: HealthClass;
@@ -70,9 +79,13 @@ function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
-export function QuoteWizard() {
+export function QuoteWizard({
+  variant = "full",
+}: {
+  variant?: "full" | "life";
+}) {
   const router = useRouter();
-  const [step, setStep] = useState(0);
+  const isLifeOnly = variant === "life";
   const storedRaw = useSyncExternalStore(
     subscribeQuoteWizardStorage,
     getQuoteWizardStorageRaw,
@@ -97,7 +110,6 @@ export function QuoteWizard() {
   const [fieldErrors, setFieldErrors] = useState<
     Partial<Record<keyof QuoteWizardSnapshot | "tcpaConsent", string>>
   >({});
-  const [submittedId, setSubmittedId] = useState("");
   const [isPending, setIsPending] = useState(false);
   const [companyWebsite, setCompanyWebsite] = useState("");
   const [tcpaConsent, setTcpaConsent] = useState(false);
@@ -106,31 +118,83 @@ export function QuoteWizard() {
   const [turnstileReset, setTurnstileReset] = useState(0);
   const turnstileRequired = isTurnstileEnforcedOnClient();
 
-  const isLifeFlow = state.coverageType === "Life";
+  const submittedId = state.submittedReferenceId;
+  const isLifeFlow = isLifeOnly || state.coverageType === "Life";
+  const minStep = isLifeOnly ? LIFE_STEP.COVERAGE : LIFE_STEP.TYPE;
+  const step =
+    isLifeOnly && !submittedId
+      ? Math.max(state.step, LIFE_STEP.COVERAGE)
+      : state.step;
   const showEstimate = isLifeFlow && !submittedId;
-  const totalSteps = isLifeFlow ? LIFE_STEP_COUNT : 1;
+  const totalSteps = isLifeOnly
+    ? LIFE_STEP_COUNT - 1
+    : isLifeFlow
+      ? LIFE_STEP_COUNT
+      : 1;
+  const visibleStep = isLifeOnly ? step : step + 1;
+  const estimateReady = canCalculateEstimate(state);
+  const outOfStateZip =
+    isValidUsZip(state.zipCode) && !isGeorgiaZip(state.zipCode);
 
-  const estimate = useMemo(
-    () =>
-      calculatePremiumEstimate({
-        coverageAmount: state.coverageAmount,
-        termLength: state.termLength,
-        age: state.age,
-        gender: state.gender,
-        healthClass: state.healthClass,
-      }),
-    [state.coverageAmount, state.termLength, state.age, state.gender, state.healthClass],
-  );
+  useEffect(() => {
+    if (!isLifeOnly || submittedId) return;
+    if (state.coverageType === "Life" && state.step >= LIFE_STEP.COVERAGE) {
+      return;
+    }
+    setState((current) => ({
+      ...current,
+      coverageType: "Life",
+      step:
+        current.step < LIFE_STEP.COVERAGE
+          ? LIFE_STEP.COVERAGE
+          : current.step,
+    }));
+  }, [
+    isLifeOnly,
+    setState,
+    state.coverageType,
+    state.step,
+    submittedId,
+  ]);
+
+  const estimate = useMemo(() => {
+    if (
+      !state.termLength ||
+      !state.gender ||
+      !state.healthClass
+    ) {
+      return null;
+    }
+    return calculatePremiumEstimate({
+      coverageAmount: state.coverageAmount,
+      termLength: state.termLength,
+      age: state.age,
+      gender: state.gender,
+      healthClass: state.healthClass,
+    });
+  }, [
+    state.coverageAmount,
+    state.termLength,
+    state.age,
+    state.gender,
+    state.healthClass,
+  ]);
 
   const progressValue = submittedId
     ? 100
-    : ((step + 1) / totalSteps) * 100;
+    : isLifeOnly
+      ? (step / totalSteps) * 100
+      : ((step + 1) / totalSteps) * 100;
 
   const updateState = <K extends keyof QuoteWizardSnapshot>(
     key: K,
     value: QuoteWizardSnapshot[K],
   ) => {
-    setState((current) => ({ ...current, [key]: value }));
+    setState((current) => ({
+      ...current,
+      [key]: value,
+      ...(key === "coverageType" ? { step: 0 } : {}),
+    }));
     setFieldErrors((current) => {
       if (!current[key]) return current;
       const next = { ...current };
@@ -139,25 +203,44 @@ export function QuoteWizard() {
     });
   };
 
+  const setStep = (nextStep: number) => {
+    setState((current) => ({
+      ...current,
+      step: Math.min(Math.max(nextStep, 0), LIFE_STEP_COUNT - 1),
+    }));
+  };
+
   const validateStep = (): boolean => {
     const errors: Partial<
       Record<keyof QuoteWizardSnapshot | "tcpaConsent", string>
     > = {};
 
-    if (step === 0 && !state.coverageType) {
+    if (step === LIFE_STEP.TYPE && !state.coverageType) {
       errors.coverageType = "Select a coverage type.";
     }
 
-    if (isLifeFlow && step === 6) {
-      if (state.zipCode.trim().length < 5) {
-        errors.zipCode = "Enter a valid ZIP code.";
+    if (isLifeFlow && step === LIFE_STEP.GENDER && !state.gender) {
+      errors.gender = "Select male or female.";
+    }
+
+    if (isLifeFlow && step === LIFE_STEP.HEALTH && !state.healthClass) {
+      errors.healthClass = "Select the option that best matches your health.";
+    }
+
+    if (isLifeFlow && step === LIFE_STEP.TERM && !state.termLength) {
+      errors.termLength = "Select a term length.";
+    }
+
+    if (isLifeFlow && step === LIFE_STEP.IDENTITY) {
+      if (!isValidUsZip(state.zipCode)) {
+        errors.zipCode = "Enter a 5-digit ZIP code.";
       }
       if (state.fullName.trim().length < 2) {
         errors.fullName = "Enter the name for this coverage.";
       }
     }
 
-    if (isLifeFlow && step === 7) {
+    if (isLifeFlow && step === LIFE_STEP.CONTACT) {
       if (!isValidEmail(state.email)) {
         errors.email = "Enter a valid email.";
       }
@@ -171,6 +254,11 @@ export function QuoteWizard() {
         errors.tcpaConsent =
           "Please confirm consent to be contacted by phone or text.";
       }
+      if (!state.gender) errors.gender = "Select male or female.";
+      if (!state.healthClass) {
+        errors.healthClass = "Select a health option.";
+      }
+      if (!state.termLength) errors.termLength = "Select a term length.";
     }
 
     setFieldErrors(errors);
@@ -183,19 +271,27 @@ export function QuoteWizard() {
       return;
     }
 
-    if (step === 0 && (state.coverageType === "Medicare" || state.coverageType === "Advocacy")) {
-      trackEvent("quote_schedule_redirect", { coverageType: state.coverageType });
+    if (
+      step === LIFE_STEP.TYPE &&
+      (state.coverageType === "Medicare" || state.coverageType === "Advocacy")
+    ) {
+      trackEvent("quote_schedule_redirect", {
+        coverageType: state.coverageType,
+      });
       router.push("/schedule-consultation");
       return;
     }
 
-    trackEvent("quote_step_complete", { step: step + 1, coverageType: state.coverageType });
-    setStep((current) => Math.min(current + 1, LIFE_STEP_COUNT - 1));
+    trackEvent("quote_step_complete", {
+      step: step + 1,
+      coverageType: state.coverageType,
+    });
+    setStep(Math.min(step + 1, LIFE_STEP_COUNT - 1));
   };
 
   const prevStep = () => {
     setFieldErrors({});
-    setStep((current) => Math.max(current - 1, 0));
+    setStep(Math.max(step - 1, minStep));
   };
 
   const handleSubmit = async () => {
@@ -220,14 +316,20 @@ export function QuoteWizard() {
       topic: topic || "Life Insurance",
       preferredCallbackMethod: state.preferredCallbackMethod,
       message: [
-        "Submitted via homepage quote wizard.",
+        isLifeOnly
+          ? "Submitted via the life quote page."
+          : "Submitted via homepage quote wizard.",
         quoteSummary,
-        state.zipCode.trim() ? `ZIP: ${state.zipCode.trim()}` : null,
       ]
         .filter(Boolean)
         .join("\n\n"),
       quoteSummary,
-      healthClass: state.healthClass,
+      healthClass: state.healthClass || null,
+      zipCode: state.zipCode.trim(),
+      coverageAmount: state.coverageAmount,
+      termLength: state.termLength,
+      age: state.age,
+      gender: state.gender || null,
       companyWebsite,
       tcpaConsent,
       turnstileToken: turnstileToken ?? undefined,
@@ -245,8 +347,10 @@ export function QuoteWizard() {
       return;
     }
 
-    setSubmittedId(result.referenceId ?? "");
-    clearQuoteWizardSnapshot();
+    setState((current) => ({
+      ...current,
+      submittedReferenceId: result.referenceId ?? "",
+    }));
     trackEvent("quote_submitted", {
       coverageType: state.coverageType,
       coverageAmount: state.coverageAmount,
@@ -254,10 +358,13 @@ export function QuoteWizard() {
     });
   };
 
-  const isLastLifeStep = isLifeFlow && step === LIFE_STEP_COUNT - 1;
+  const isLastLifeStep = isLifeFlow && step === LIFE_STEP.CONTACT;
 
   return (
-    <section id="pricing" className="section-shell bg-gradient-soft">
+    <section
+      id={isLifeOnly ? "life-quote" : "pricing"}
+      className="section-shell bg-gradient-soft"
+    >
       <div className="container-shell">
         <div className="grid gap-6 lg:grid-cols-[1.35fr_0.95fr] lg:items-start">
         <Card className="border border-gray-200 bg-card">
@@ -265,17 +372,18 @@ export function QuoteWizard() {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <CardTitle className="text-3xl font-medium tracking-tight text-gray-900">
-                  Start your quote
+                  {isLifeOnly ? "Get a life quote" : "Start your quote"}
                 </CardTitle>
                 <CardDescription className="mt-2 text-base font-light leading-7 text-gray-700">
-                  A guided intake for life insurance, Medicare guidance, or
-                  patient advocacy support.
+                  {isLifeOnly
+                    ? "A guided term life estimate. Answer a few questions and we'll follow up with personalized options."
+                    : "A guided intake for life insurance, Medicare guidance, or patient advocacy support."}
                 </CardDescription>
               </div>
               {!submittedId && (
                 <div className="rounded-full border border-gray-200 bg-gray-50 px-4 py-2">
                   <span className="text-sm font-normal text-foreground">
-                    Step {step + 1} of {totalSteps}
+                    Step {visibleStep} of {totalSteps}
                   </span>
                 </div>
               )}
@@ -285,17 +393,20 @@ export function QuoteWizard() {
 
           <CardContent className="p-6 pt-0">
             {submittedId ? (
-              <div className="rounded-lg border border-success bg-muted p-6">
+              <div
+                className="rounded-lg border border-success bg-muted p-6"
+                role="status"
+              >
                 <div className="flex items-start gap-4">
                   <svg
                     className="h-8 w-8 text-success"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
+                    aria-hidden
                   >
                     <path
                       strokeLinecap="round"
-                      strokeLinejoin="round"
                       strokeWidth="2"
                       d="M9 12l2 2 4-4"
                     />
@@ -305,25 +416,34 @@ export function QuoteWizard() {
                       Your estimate request has been received
                     </h3>
                     <p className="mt-2 text-base font-light leading-7 text-gray-700">
-                      We&apos;ll follow up with personalized options based on
-                      your answers. Reference ID:{" "}
-                      <span className="font-mono text-sm text-foreground">
-                        {submittedId}
-                      </span>
+                      We&apos;ll follow up with personalized options within one
+                      business day. Reference ID:{" "}
+                      <CopyReferenceId referenceId={submittedId} />
+                    </p>
+                    <p className="mt-3 text-sm font-light leading-6 text-gray-600">
+                      Want to pick a time? Scheduling uses this same request —
+                      you will not be asked to start over.
                     </p>
                     <Link
-                      href="/schedule-consultation"
+                      href={`/schedule-consultation?ref=${encodeURIComponent(submittedId)}`}
                       className="mt-6 inline-flex min-h-[48px] items-center justify-center rounded-xl bg-primary px-6 text-sm font-semibold text-primary-foreground transition-colors hover:bg-secondary"
                     >
                       Schedule a Free Consultation
                     </Link>
+                    <button
+                      type="button"
+                      className="mt-4 block text-sm font-normal text-primary underline-offset-2 hover:underline"
+                      onClick={() => clearQuoteWizardSnapshot()}
+                    >
+                      Start a new quote
+                    </button>
                   </div>
                 </div>
               </div>
             ) : (
               <div className="space-y-4">
                 <div>
-                  {step === 0 && (
+                  {!isLifeOnly && step === LIFE_STEP.TYPE && (
                     <div className="grid gap-4">
                       <label className="grid gap-2">
                         <span className="text-sm font-normal text-foreground">
@@ -365,121 +485,7 @@ export function QuoteWizard() {
                     </div>
                   )}
 
-                  {isLifeFlow && step === 1 && (
-                    <div className="space-y-6">
-                      <div>
-                        <h3 className="text-xl font-medium text-gray-900">
-                          What is your current age?
-                        </h3>
-                        <p className="mt-2 text-sm font-light text-gray-600">
-                          Age is a primary factor in term life pricing.
-                        </p>
-                      </div>
-                      <div className="rounded-xl bg-muted px-5 py-4 text-center">
-                        <p className="text-3xl font-medium tracking-tight text-gray-900">
-                          {state.age}
-                        </p>
-                        <p className="mt-1 text-sm text-gray-600">years old</p>
-                      </div>
-                      <label className="block">
-                        <span className="sr-only">Age</span>
-                        <input
-                          type="range"
-                          min={18}
-                          max={75}
-                          step={1}
-                          value={state.age}
-                          onChange={(event) =>
-                            updateState("age", Number(event.target.value))
-                          }
-                          className="h-2 w-full cursor-pointer appearance-none rounded-full bg-gray-200 accent-primary"
-                        />
-                        <div className="mt-2 flex justify-between text-xs text-gray-500">
-                          <span>18</span>
-                          <span>75</span>
-                        </div>
-                      </label>
-                    </div>
-                  )}
-
-                  {isLifeFlow && step === 2 && (
-                    <div className="space-y-6">
-                      <div>
-                        <h3 className="text-xl font-medium text-gray-900">Gender</h3>
-                        <p className="mt-2 text-sm font-light text-gray-600">
-                          Used for actuarial pricing estimates only.
-                        </p>
-                      </div>
-                      <div
-                        className="grid grid-cols-2 gap-3"
-                        role="group"
-                        aria-label="Gender"
-                      >
-                        {(
-                          [
-                            { value: "male", label: "Male" },
-                            { value: "female", label: "Female" },
-                          ] as const
-                        ).map((option) => (
-                          <button
-                            key={option.value}
-                            type="button"
-                            onClick={() => updateState("gender", option.value)}
-                            aria-pressed={state.gender === option.value}
-                            className={`rounded-xl border px-4 py-5 text-center text-lg font-medium transition-colors ${
-                              state.gender === option.value
-                                ? "border-primary bg-accent text-gray-900 shadow-sm"
-                                : "border-gray-200 bg-card text-gray-700 hover:border-gray-300"
-                            }`}
-                          >
-                            {option.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {isLifeFlow && step === 3 && (
-                    <div className="space-y-6">
-                      <div>
-                        <h3 className="text-xl font-medium text-gray-900">
-                          Health &amp; tobacco status
-                        </h3>
-                        <p className="mt-2 text-sm font-light text-gray-600">
-                          Select the option that best describes your current
-                          situation.
-                        </p>
-                      </div>
-                      <div
-                        className="grid gap-3 sm:grid-cols-2"
-                        role="group"
-                        aria-label="Health and tobacco status"
-                      >
-                        {HEALTH_OPTIONS.map((option) => (
-                          <button
-                            key={option.value}
-                            type="button"
-                            onClick={() => updateState("healthClass", option.value)}
-                            aria-pressed={state.healthClass === option.value}
-                            className={`rounded-xl border px-4 py-4 text-left transition-colors ${
-                              state.healthClass === option.value
-                                ? "border-primary bg-accent shadow-sm"
-                                : "border-gray-200 bg-card hover:border-gray-300"
-                            }`}
-                          >
-                            <span className="block font-medium text-gray-900">
-                              {option.label}
-                            </span>
-                            <span className="mt-1 block text-sm font-light text-gray-600">
-                              {option.description}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {isLifeFlow && step === 4 && (
+                  {isLifeFlow && step === LIFE_STEP.COVERAGE && (
                     <div className="space-y-6">
                       <div>
                         <h3 className="text-xl font-medium text-gray-900">
@@ -516,7 +522,131 @@ export function QuoteWizard() {
                     </div>
                   )}
 
-                  {isLifeFlow && step === 5 && (
+                  {isLifeFlow && step === LIFE_STEP.AGE && (
+                    <div className="space-y-6">
+                      <div>
+                        <h3 className="text-xl font-medium text-gray-900">
+                          What is your current age?
+                        </h3>
+                        <p className="mt-2 text-sm font-light text-gray-600">
+                          Age is a primary factor in term life pricing.
+                        </p>
+                      </div>
+                      <div className="rounded-xl bg-muted px-5 py-4 text-center">
+                        <p className="text-3xl font-medium tracking-tight text-gray-900">
+                          {state.age}
+                        </p>
+                        <p className="mt-1 text-sm text-gray-600">years old</p>
+                      </div>
+                      <label className="block">
+                        <span className="sr-only">Age</span>
+                        <input
+                          type="range"
+                          min={18}
+                          max={75}
+                          step={1}
+                          value={state.age}
+                          onChange={(event) =>
+                            updateState("age", Number(event.target.value))
+                          }
+                          className="h-2 w-full cursor-pointer appearance-none rounded-full bg-gray-200 accent-primary"
+                        />
+                        <div className="mt-2 flex justify-between text-xs text-gray-500">
+                          <span>18</span>
+                          <span>75</span>
+                        </div>
+                      </label>
+                    </div>
+                  )}
+
+                  {isLifeFlow && step === LIFE_STEP.GENDER && (
+                    <div className="space-y-6">
+                      <div>
+                        <h3 className="text-xl font-medium text-gray-900">Gender</h3>
+                        <p className="mt-2 text-sm font-light text-gray-600">
+                          Used for actuarial pricing estimates only.
+                        </p>
+                      </div>
+                      <div
+                        className="grid grid-cols-2 gap-3"
+                        role="group"
+                        aria-label="Gender"
+                      >
+                        {(
+                          [
+                            { value: "male", label: "Male" },
+                            { value: "female", label: "Female" },
+                          ] as const
+                        ).map((option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => updateState("gender", option.value)}
+                            aria-pressed={state.gender === option.value}
+                            className={`rounded-xl border px-4 py-5 text-center text-lg font-medium transition-colors ${
+                              state.gender === option.value
+                                ? "border-primary bg-accent text-gray-900 shadow-sm"
+                                : "border-gray-200 bg-card text-gray-700 hover:border-gray-300"
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                      {fieldErrors.gender && (
+                        <p className="text-sm font-normal text-warning">
+                          {fieldErrors.gender}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {isLifeFlow && step === LIFE_STEP.HEALTH && (
+                    <div className="space-y-6">
+                      <div>
+                        <h3 className="text-xl font-medium text-gray-900">
+                          Health &amp; tobacco status
+                        </h3>
+                        <p className="mt-2 text-sm font-light text-gray-600">
+                          Select the option that best describes your current
+                          situation.
+                        </p>
+                      </div>
+                      <div
+                        className="grid gap-3 sm:grid-cols-2"
+                        role="group"
+                        aria-label="Health and tobacco status"
+                      >
+                        {HEALTH_OPTIONS.map((option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => updateState("healthClass", option.value)}
+                            aria-pressed={state.healthClass === option.value}
+                            className={`rounded-xl border px-4 py-4 text-left transition-colors ${
+                              state.healthClass === option.value
+                                ? "border-primary bg-accent shadow-sm"
+                                : "border-gray-200 bg-card hover:border-gray-300"
+                            }`}
+                          >
+                            <span className="block font-medium text-gray-900">
+                              {option.label}
+                            </span>
+                            <span className="mt-1 block text-sm font-light text-gray-600">
+                              {option.description}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                      {fieldErrors.healthClass && (
+                        <p className="text-sm font-normal text-warning">
+                          {fieldErrors.healthClass}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {isLifeFlow && step === LIFE_STEP.TERM && (
                     <div className="space-y-6">
                       <div>
                         <h3 className="text-xl font-medium text-gray-900">
@@ -549,10 +679,15 @@ export function QuoteWizard() {
                           </button>
                         ))}
                       </div>
+                      {fieldErrors.termLength && (
+                        <p className="text-sm font-normal text-warning">
+                          {fieldErrors.termLength}
+                        </p>
+                      )}
                     </div>
                   )}
 
-                  {isLifeFlow && step === 6 && (
+                  {isLifeFlow && step === LIFE_STEP.IDENTITY && (
                     <div className="grid gap-4">
                       <div>
                         <h3 className="text-xl font-medium text-gray-900">
@@ -569,8 +704,15 @@ export function QuoteWizard() {
                         </span>
                         <Input
                           value={state.zipCode}
-                          onChange={(event) => updateState("zipCode", event.target.value)}
+                          onChange={(event) =>
+                            updateState(
+                              "zipCode",
+                              event.target.value.replace(/\D/g, "").slice(0, 5),
+                            )
+                          }
                           inputMode="numeric"
+                          maxLength={5}
+                          autoComplete="postal-code"
                           placeholder="Where you live"
                           className="min-h-[48px] text-foreground"
                         />
@@ -579,6 +721,13 @@ export function QuoteWizard() {
                             {fieldErrors.zipCode}
                           </span>
                         )}
+                        {outOfStateZip && (
+                          <p className="text-sm font-light leading-6 text-gray-600">
+                            Hunter Baruch Financial is licensed in Georgia. You
+                            can still submit — we&apos;ll tell you if coverage
+                            is available in your state.
+                          </p>
+                        )}
                       </label>
                       <label className="grid gap-2">
                         <span className="text-sm font-normal text-foreground">
@@ -586,8 +735,11 @@ export function QuoteWizard() {
                         </span>
                         <Input
                           value={state.fullName}
-                          onChange={(event) => updateState("fullName", event.target.value)}
+                          onChange={(event) =>
+                            updateState("fullName", event.target.value)
+                          }
                           placeholder="As it would appear on a policy"
+                          autoComplete="name"
                           className="min-h-[48px] text-foreground"
                         />
                         {fieldErrors.fullName && (
@@ -599,7 +751,7 @@ export function QuoteWizard() {
                     </div>
                   )}
 
-                  {isLifeFlow && step === 7 && (
+                  {isLifeFlow && step === LIFE_STEP.CONTACT && (
                     <div className="grid gap-4">
                       <div>
                         <h3 className="text-xl font-medium text-gray-900">
@@ -614,8 +766,11 @@ export function QuoteWizard() {
                         <span className="text-sm font-normal text-foreground">Email</span>
                         <Input
                           value={state.email}
-                          onChange={(event) => updateState("email", event.target.value)}
+                          onChange={(event) =>
+                            updateState("email", event.target.value)
+                          }
                           type="email"
+                          autoComplete="email"
                           className="min-h-[48px] text-foreground"
                         />
                         {fieldErrors.email && (
@@ -628,8 +783,11 @@ export function QuoteWizard() {
                         <span className="text-sm font-normal text-foreground">Phone</span>
                         <Input
                           value={state.phone}
-                          onChange={(event) => updateState("phone", event.target.value)}
+                          onChange={(event) =>
+                            updateState("phone", event.target.value)
+                          }
                           type="tel"
+                          autoComplete="tel"
                           className="min-h-[48px] text-foreground"
                         />
                         {fieldErrors.phone && (
@@ -650,7 +808,10 @@ export function QuoteWizard() {
                         <select
                           value={state.preferredCallbackMethod}
                           onChange={(event) =>
-                            updateState("preferredCallbackMethod", event.target.value)
+                            updateState(
+                              "preferredCallbackMethod",
+                              event.target.value,
+                            )
                           }
                           className="min-h-[48px] rounded-lg border border-input bg-card px-4 py-3 text-base font-light text-foreground"
                         >
@@ -680,6 +841,9 @@ export function QuoteWizard() {
                 <FormValidationStatus
                   errors={[
                     fieldErrors.coverageType,
+                    fieldErrors.gender,
+                    fieldErrors.healthClass,
+                    fieldErrors.termLength,
                     fieldErrors.zipCode,
                     fieldErrors.fullName,
                     fieldErrors.email,
@@ -695,20 +859,23 @@ export function QuoteWizard() {
                   <Button
                     type="button"
                     onClick={prevStep}
-                    disabled={step === 0 || isPending}
+                    disabled={step <= minStep || isPending}
                     className="bg-accent text-foreground hover:bg-muted disabled:bg-gray-300 disabled:text-gray-600"
                   >
                     Back
                   </Button>
 
-                  {step === 0 && state.coverageType !== "Life" ? (
+                  {!isLifeOnly &&
+                  step === LIFE_STEP.TYPE &&
+                  state.coverageType !== "Life" ? (
                     <Button
                       type="button"
                       onClick={nextStep}
                       disabled={!state.coverageType || isPending}
                       className="bg-primary text-primary-foreground hover:bg-secondary disabled:bg-gray-300 disabled:text-gray-600"
                     >
-                      {state.coverageType === "Medicare" || state.coverageType === "Advocacy"
+                      {state.coverageType === "Medicare" ||
+                      state.coverageType === "Advocacy"
                         ? "Schedule a Free Consultation"
                         : "Next"}
                     </Button>
@@ -733,7 +900,7 @@ export function QuoteWizard() {
                       disabled={isPending}
                       className="bg-primary text-primary-foreground hover:bg-secondary"
                     >
-                      {step === 0 ? "Next" : "Continue"}
+                      {isLifeOnly || step !== LIFE_STEP.TYPE ? "Continue" : "Next"}
                     </Button>
                   )}
                 </div>
@@ -750,14 +917,24 @@ export function QuoteWizard() {
                   <p className="text-sm font-light uppercase tracking-[0.18em] text-gray-200">
                     Your estimate
                   </p>
-                  <p className="mt-4 text-4xl font-medium tracking-tight text-gray-50 sm:text-5xl">
-                    {formatCurrency(estimate.lowMonthly)}–
-                    {formatCurrency(estimate.highMonthly)}
-                    <span className="text-2xl font-light text-gray-200">/mo</span>
-                  </p>
+                  {estimateReady && estimate ? (
+                    <p className="mt-4 text-4xl font-medium tracking-tight text-gray-50 sm:text-5xl">
+                      {formatCurrency(estimate.lowMonthly)}–
+                      {formatCurrency(estimate.highMonthly)}
+                      <span className="text-2xl font-light text-gray-200">/mo</span>
+                    </p>
+                  ) : (
+                    <p className="mt-4 text-2xl font-medium tracking-tight text-gray-50">
+                      {formatCoverage(state.coverageAmount)}
+                    </p>
+                  )}
                   <p className="mt-3 text-sm font-light leading-6 text-gray-200">
-                    {formatCoverage(state.coverageAmount)} · {state.termLength}-year
-                    term · age {state.age}
+                    {formatCoverage(state.coverageAmount)}
+                    {state.termLength ? ` · ${state.termLength}-year term` : ""}
+                    {` · age ${state.age}`}
+                    {!estimateReady
+                      ? " · monthly range after the next few answers"
+                      : ""}
                   </p>
 
                   <div className="mt-6 rounded-xl border border-white/15 bg-white/5 p-4">

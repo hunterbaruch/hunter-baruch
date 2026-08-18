@@ -16,7 +16,12 @@ export const metadata: Metadata = {
   },
 };
 
-export default function ScheduleConsultationPage() {
+export default async function ScheduleConsultationPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ ref?: string }>;
+}) {
+  const params = await searchParams;
   return (
     <>
       <PageHero
@@ -83,7 +88,7 @@ export default function ScheduleConsultationPage() {
           </div>
 
           <div className="rounded-xl border border-gray-700 bg-card p-8">
-            <ScheduleConsultationForm />
+            <ScheduleConsultationForm existingReferenceId={params.ref} />
           </div>
         </div>
       </section>

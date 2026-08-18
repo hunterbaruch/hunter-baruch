@@ -52,30 +52,60 @@ export function ServiceCards() {
                   ))}
                 </ul>
                 <div className="mt-6 grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      scrollToId("pricing");
-                      trackEvent("service_cta_click", { service: service.title });
-                    }}
-                    className="inline-flex min-w-0 items-center justify-between gap-2 whitespace-nowrap rounded-pill bg-tertiary px-4 py-3 text-sm font-normal text-tertiary-foreground transition-colors duration-200 ease-in hover:bg-gray-800"
-                  >
-                    <span>{service.action}</span>
-                    <svg
-                      className="h-4 w-4 shrink-0"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      aria-hidden
+                  {"actionHref" in service && service.actionHref ? (
+                    <Link
+                      href={service.actionHref}
+                      onClick={() =>
+                        trackEvent("service_cta_click", {
+                          service: service.title,
+                        })
+                      }
+                      className="inline-flex min-w-0 items-center justify-between gap-2 whitespace-nowrap rounded-pill bg-tertiary px-4 py-3 text-sm font-normal text-tertiary-foreground transition-colors duration-200 ease-in hover:bg-gray-800"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M5 12h14M13 6l6 6-6 6"
-                      />
-                    </svg>
-                  </button>
+                      <span>{service.action}</span>
+                      <svg
+                        className="h-4 w-4 shrink-0"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        aria-hidden
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M5 12h14M13 6l6 6-6 6"
+                        />
+                      </svg>
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        scrollToId("pricing");
+                        trackEvent("service_cta_click", {
+                          service: service.title,
+                        });
+                      }}
+                      className="inline-flex min-w-0 items-center justify-between gap-2 whitespace-nowrap rounded-pill bg-tertiary px-4 py-3 text-sm font-normal text-tertiary-foreground transition-colors duration-200 ease-in hover:bg-gray-800"
+                    >
+                      <span>{service.action}</span>
+                      <svg
+                        className="h-4 w-4 shrink-0"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        aria-hidden
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M5 12h14M13 6l6 6-6 6"
+                        />
+                      </svg>
+                    </button>
+                  )}
                   <Link
                     href={service.href}
                     className="inline-flex items-center justify-center whitespace-nowrap rounded-pill border border-gray-200 bg-accent px-4 py-3 text-sm font-normal text-foreground transition-colors duration-200 ease-in hover:bg-muted"

@@ -8,14 +8,14 @@ export default async function AdminLayout({
   return (
     <div className="min-h-screen bg-muted/40">
       <div className="border-b border-border bg-card">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <p className="text-sm font-medium text-foreground">
             Hunter Baruch Financial — Admin
           </p>
           <AdminSessionActions />
         </div>
       </div>
-      <div className="mx-auto max-w-5xl px-6 py-8">{children}</div>
+      <div className="mx-auto max-w-6xl px-6 py-8">{children}</div>
     </div>
   );
 }
